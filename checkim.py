@@ -130,11 +130,11 @@ def find_extrema(binary_image):
 
 
 
-
+main_dir = "D:/Internship/NTU/nellie_output/start 1"
 #test the result from iminstance
-seg_path = "D:/Internship/NTU/nellie_output/start 5/5_resized_1_glu_1min_#1.ome-ch0-im_instance_label.ome.tif"
-reassigned_path = "D:/Internship/NTU/nellie_output/start 5/5_resized_1_glu_1min_#1.ome-ch0-im_obj_label_reassigned.ome.tif"
-CSV_file_path = "D:/Internship/NTU/nellie_output/start 5/5_resized_1_glu_1min_#1.ome-ch0-features_components.csv"
+seg_path = main_dir + "/1_resized_0_glu_1min_#1.ome-ch0-im_instance_label.ome.tif"
+reassigned_path = main_dir +"/1_resized_0_glu_1min_#1.ome-ch0-im_obj_label_reassigned.ome.tif"
+CSV_file_path = main_dir + "/1_resized_0_glu_1min_#1.ome-ch0-features_components.csv"
 
 # Usage
 labeled_im = tifffile.imread(seg_path)
@@ -150,7 +150,7 @@ plot_labels(CSV_file_path,seg_path,reassigned_path,321)
 extremas = find_extrema(binary_image)
 centriod = center_of_mass(binary_image)
 
-
+'''
 # Plot the binary image and contours
 plt.figure(figsize=(10, 5))
 
@@ -164,12 +164,6 @@ plt.show()
 
 print()
 
-
-
-
-
-
-'''
 viewer = napari.Viewer()
 for frame in range(30):
     labeled_im_frame = labeled_im[frame]
