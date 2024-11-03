@@ -4,6 +4,7 @@ import tifffile
 import numpy as np
 import pandas as pd
 import scipy.stats
+import os
 
 import matplotlib.pyplot as plt
 
@@ -36,7 +37,7 @@ def plot_corr(x,y,corr_score):
     plt.ylabel('events from tenth frame')
 
     # Add text box with correlation info
-    text_box = f'Correlation: {corr_score[0]:.2f}\np-value: {corr_score[1]:.4f}'
+    text_box = f'Correlation: {corr_score[0]:.2f}/np-value: {corr_score[1]:.4f}'
     plt.text(0.05, 0.95, text_box, transform=plt.gca().transAxes, 
             verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.5))
 
@@ -45,54 +46,85 @@ def plot_corr(x,y,corr_score):
     plt.tight_layout()
     plt.show()
 
-#reassigned_path = "/home/jirapong/Mito_data/nellie_output/test.ome-ch0-im_obj_label_reassigned.ome.tif"
-#file_path = "/home/jirapong/Mito_data/nellie_output/test.ome-ch0-features_components.csv"
-#seg_path = "/home/jirapong/Mito_data/nellie_output/test.ome-ch0-im_instance_label.ome.tif"
+dir_path = 'D:/Internship/NTU/algo_output/10s'
 
-first_frame_fission_path_05 = "D:/Internship/NTU/algo_output/Start_1st_frame/1_0_output_fission.csv"
-first_frame_fusion_path_05 = "D:/Internship/NTU/algo_output/Start_1st_frame/1_0_output_fusion.csv"
-tenth_frame_fission_path_05 = "D:/Internship/NTU/algo_output/Start_10th_frame/10_0_output_fission.csv"
-tenth_frame_fusion_path_05 = "D:/Internship/NTU/algo_output/Start_10th_frame/10_0_output_fusion.csv"
+mitometer_path = 'D:/Internship/NTU/algo_output/mito'
+mito_fission = []
+mito_fusion = []
 
+mito_fiss_all = []
+mito_fus_all = []
+for file in os.listdir(mitometer_path):
+# check if current path is a file
+    if "fission" in file and os.path.isfile(os.path.join(mitometer_path,file)):
+        mito_fission.append(os.path.join(mitometer_path,file))
+    if "fusion" in file and os.path.isfile(os.path.join(mitometer_path,file)):
+        mito_fusion.append(os.path.join(mitometer_path,file))
 
-first_frame_fission_path_2 = "D:/Internship/NTU/algo_output/Start_1st_frame/1_2_output_fission.csv"
-first_frame_fusion_path_2 = "D:/Internship/NTU/algo_output/Start_1st_frame/1_2_output_fusion.csv"
-tenth_frame_fission_path_2 = "D:/Internship/NTU/algo_output/Start_10th_frame/10_2_output_fission.csv"
-tenth_frame_fusion_path_2 = "D:/Internship/NTU/algo_output/Start_10th_frame/10_2_output_fusion.csv"
-
-
-#read file
-first_frame_fission_05 = pd.read_csv(first_frame_fission_path_05)
-first_frame_fusion_05 = pd.read_csv(first_frame_fusion_path_05)
-tenth_frame_fission_05 = pd.read_csv(tenth_frame_fission_path_05)
-tenth_frame_fusion_05 = pd.read_csv(tenth_frame_fusion_path_05)
-
-
-first_frame_fission_2 = pd.read_csv(first_frame_fission_path_2)
-first_frame_fusion_2 = pd.read_csv(first_frame_fusion_path_2)
-tenth_frame_fission_2 = pd.read_csv(tenth_frame_fission_path_2)
-tenth_frame_fusion_2 = pd.read_csv(tenth_frame_fusion_path_2)
-
-# count non zero
-first_frame_fission_0_event = np.count_nonzero(first_frame_fission_05, axis=0)
-first_frame_fusion_0_event = np.count_nonzero(first_frame_fusion_05, axis=0)
-tenth_frame_fission_0_event = np.count_nonzero(tenth_frame_fission_05, axis=0)
-tenth_frame_fusion_0_event = np.count_nonzero(tenth_frame_fusion_05, axis=0)
-
-first_frame_fission_2_event = np.count_nonzero(first_frame_fission_2, axis=0)
-first_frame_fusion_2_event = np.count_nonzero(first_frame_fusion_2, axis=0)
-tenth_frame_fission_2_event = np.count_nonzero(tenth_frame_fission_2, axis=0)
-tenth_frame_fusion_2_event = np.count_nonzero(tenth_frame_fusion_2, axis=0)
+for file in mito_fission:
+    fission_all = check_fission_fusion_MM(file)
+    if len(mito_fiss_all) == 0:
+        mito_fiss_all = [fission_all]
+    else:
+        mito_fiss_all.append(fission_all)
 
 
-corr_fission_0 = scipy.stats.pearsonr(first_frame_fission_0_event[10:],tenth_frame_fission_0_event[1:])
-corr_fusion_0 = scipy.stats.pearsonr(first_frame_fusion_0_event[10:],tenth_frame_fusion_0_event[1:])
+for file in mito_fusion:
+    fission_all = check_fission_fusion_MM(file)
 
-corr_fission_2 = scipy.stats.pearsonr(first_frame_fission_2_event[10:],tenth_frame_fission_2_event[1:])
-corr_fusion_2 = scipy.stats.pearsonr(first_frame_fusion_2_event[10:],tenth_frame_fusion_2_event[1:])
+# list to store files
+output_fission = []
+output_fusion = []
+event = []
+fission_df = []
+fusion_df = []
+
+# Iterate directory
+for file in os.listdir(dir_path):
+# check if current path is a file
+    if "output_fission" in file and os.path.isfile(os.path.join(dir_path,file)):
+        output_fission.append(os.path.join(dir_path,file))
+    if "output_fusion" in file and os.path.isfile(os.path.join(dir_path,file)):
+        output_fusion.append(os.path.join(dir_path,file))
+
+for file in output_fission:
+    df = pd.read_csv(file) 
+    df_event = np.count_nonzero(df, axis=0).tolist()
+    if len(fission_df) == 0:
+        fission_df = [df_event]
+    else:
+        fission_df.append(df_event)
+
+for file in output_fusion:
+    df = pd.read_csv(file) 
+    df_event = np.count_nonzero(df, axis=0).tolist()
+    if len(fusion_df) == 0:
+        fusion_df = [df_event]
+    else:
+        fusion_df.append(df_event)
+
+fiss_fus_ratios = []
+for i in range(len(fusion_df)):
+    for j in range(len(fusion_df[i])):
+        try:
+            fiss_fus_ratios.append(fission_df[i][j] / fusion_df[i][j])
+        except ZeroDivisionError:
+            fiss_fus_ratios.append(0)
 
 
-#plot_corr(first_frame_fission_0_event[10:],tenth_frame_fission_0_event[1:],corr_fission_0)
+
+corr_full_05 = scipy.stats.pearsonr(fiss_fus_ratios[1:6] , fiss_fus_ratios[24:29] )
+corr_full_05 = scipy.stats.pearsonr(fiss_fus_ratios[2:6] , fiss_fus_ratios[44:48] )
+corr_full_0 = scipy.stats.pearsonr(fiss_fus_ratios[7:12] , fiss_fus_ratios[24+5:29+5] )
+corr_full_0 = scipy.stats.pearsonr(fiss_fus_ratios[8:12] , fiss_fus_ratios[44+4:48+4] )
+corr_full_1 = scipy.stats.pearsonr(fiss_fus_ratios[13:18] , fiss_fus_ratios[24+5+5:29+5+5] )
+corr_full_1 = scipy.stats.pearsonr(fiss_fus_ratios[14:18] , fiss_fus_ratios[44+8:48+8] )
+corr_full_2 = scipy.stats.pearsonr(fiss_fus_ratios[19:24] , fiss_fus_ratios[24+15:29+15] )
+corr_full_2 = scipy.stats.pearsonr(fiss_fus_ratios[20:24] , fiss_fus_ratios[44+12:48+12] )
+
+
+
+plot_corr(fiss_fus_ratios[1:6] , fiss_fus_ratios[24:29],corr_full_05)
 #plot_corr(first_frame_fission_0_event[10:],tenth_frame_fusion_0_event[1:],corr_fusion_0)
 
 #plot_corr(first_frame_fission_2_event[10:],tenth_frame_fission_2_event[1:],corr_fission_2)

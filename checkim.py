@@ -130,11 +130,11 @@ def find_extrema(binary_image):
 
 
 
-main_dir = "D:/Internship/NTU/nellie_output/start 1"
+main_dir = "D:/Internship/NTU/nellie_output/10s"
 #test the result from iminstance
-seg_path = main_dir + "/1_resized_0_glu_1min_#1.ome-ch0-im_instance_label.ome.tif"
-reassigned_path = main_dir +"/1_resized_0_glu_1min_#1.ome-ch0-im_obj_label_reassigned.ome.tif"
-CSV_file_path = main_dir + "/1_resized_0_glu_1min_#1.ome-ch0-features_components.csv"
+seg_path = main_dir + "/1_10s_05glu.ome-ch0-im_instance_label.ome.tif"
+reassigned_path = main_dir +"/1_10s_05glu.ome-ch0-im_obj_label_reassigned.ome.tif"
+CSV_file_path = main_dir + "/1_10s_05glu.ome-ch0-features_components.csv"
 
 # Usage
 labeled_im = tifffile.imread(seg_path)

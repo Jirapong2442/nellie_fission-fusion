@@ -10,10 +10,10 @@ import time
 
 ## Initilization
 main_dir = "D:/Internship/NTU/nellie_output/start 1"
-file_path_feature = main_dir + "/1_resized_1_glu_1min_#1.ome-ch0-features_components.csv"
-seg_path = main_dir+  "/1_resized_1_glu_1min_#1.ome-ch0-im_instance_label.ome.tif"
-reassigned_path = main_dir +"/1_resized_1_glu_1min_#1.ome-ch0-im_obj_label_reassigned.ome.tif"
-output_name = "1_1"
+file_path_feature = main_dir + "/1_resized_2_glu_1min_#1.ome-ch0-features_components.csv"
+seg_path = main_dir+  "/1_resized_2_glu_1min_#1.ome-ch0-im_instance_label.ome.tif"
+reassigned_path = main_dir +"/1_resized_2_glu_1min_#1.ome-ch0-im_obj_label_reassigned.ome.tif"
+output_name = "1_2"
 
 nellie_df = pd.read_csv(file_path_feature)
 labeled_im = tifffile.imread(seg_path)
@@ -423,7 +423,7 @@ def find_combinations(arr,error_percentage=0.15,start=1,):
 
     def backtrack(data_list,target_list,label_list,dist_list, start, remaining,sum,lower_bound,upper_bound):
 
-        if (remaining/ (sum/2)) <= error_percentage:
+        if (remaining/ (sum/2)) <= error_percentage and len(data_list) > 0 :
         #remaining >= lower_bound and remaining <= upper_bound :
             #remaining inbetween this range == acceptable
             pre_event_arr.append(data_list[:])

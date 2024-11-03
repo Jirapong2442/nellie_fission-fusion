@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 
-area_path = "D:/Internship/NTU/algo_output/Start_1st_frame/1_0.5_neighbour.csv"
+area_path = "D:/Internship/NTU/algo_output/Start_1st_frame/1_1_neighbour.csv"
 df = pd.read_csv(area_path)
 mini_df = df[["Volume_pre", "Volume_post", "Nearest Label","Distance","Frame","Label"]]
 
@@ -18,20 +18,28 @@ def find_combinations(arr,error_percentage=0.15,start=1,):
         Equation:
         specific_cell_value + pre_event_arr = target_col + result_target
     '''
+
+    # mini_df = df[["Volume_pre", "Volume_post", "Nearest Label","Distance","Frame","Label"]]
     pre_event_arr = []
     post_event_arr = []
     result_label = []
     result_dists = []
     combination_set= []
     error_range = []
-    
-    data_col = arr[:, 0]
-    target_col = arr[:, 1]
-    dists_col = arr[:,2]
-    label_col = arr[:,3]
+    dists_col = arr[:,3]
+    label_col = arr[:,2]
 
-    target_value = arr[0, 1]
-    specific_cell_value = arr[0, 0]
+    if arr[0,1] < arr[0,0]:
+        data_col = arr[:, 1]
+        target_col = arr[:, 0]  
+
+    else :
+        data_col = arr[:, 0]
+        target_col = arr[:, 1]
+
+
+    target_value = target_col[0]
+    specific_cell_value = data_col[0]
     remaining_target = target_value - specific_cell_value
     sum_all_vol = target_value+specific_cell_value
     combination_num = 0
@@ -40,7 +48,7 @@ def find_combinations(arr,error_percentage=0.15,start=1,):
 
     def backtrack(data_list,target_list,label_list,dist_list, start, remaining,sum, combination_num):
        #if (remaining/ (sum/2)) <= error_percentage:
-        if remaining <= 0: #check all combination
+        if (remaining/ (sum/2)) <= 0.5 and len(data_list) > 0  : #check all combination
         #remaining >= lower_bound and remaining <= upper_bound :
             #remaining inbetween this range == acceptable
             pre_event_arr.append(data_list[:])
@@ -54,7 +62,6 @@ def find_combinations(arr,error_percentage=0.15,start=1,):
             error_num = remaining/ (sum/2)
             error = np.full(shape=(len(dist_list)) , fill_value = error_num)
             error_range.append(error)
-
             return
         
         for i in range(start, len(data_col)):
@@ -75,7 +82,7 @@ def find_combinations(arr,error_percentage=0.15,start=1,):
     #when the lable suddenly appear or disappear = specific_cell_volume = 0 -> break the combination
    
     if specific_cell_value == 0: 
-        return np.array([])
+        return np.array([],[],[])
 
     else:
         backtrack([],[],[], [],start, remaining_target,sum_all_vol, combination_num)
@@ -93,13 +100,11 @@ def find_combinations(arr,error_percentage=0.15,start=1,):
     return result,set_all,error_all
 
 
-working_arr = mini_df[mini_df["Frame"] == 1]
-neighbor = np.array(working_arr[working_arr["Label"] == 255])
+check_frame = 0
+check_label = 304
+working_arr = mini_df[mini_df["Frame"] == check_frame]
+neighbor = np.array(working_arr[working_arr["Label"] == check_label])
 combinations,combination_set,error_all = find_combinations(neighbor)
-
-
-
-#when there's only 1 combination
 try:
     
     if combinations.shape[1] != 0:
@@ -127,10 +132,13 @@ except:
 arr = np.concatenate((np.expand_dims(pre_event_volume,axis = 1),
                       np.expand_dims(post_event_volume,axis = 1),
                       np.expand_dims(dists,axis = 1),
-                      np.expand_dims(label_arr,axis = 1), 
-                      np.expand_dims(np.concatenate(combination_set),axis = 1),
-                      np.expand_dims(np.concatenate(error_all),axis = 1)),
+                      np.expand_dims(label_arr,axis = 1)), 
+                      #np.expand_dims(np.concatenate(combination_set),axis = 1),
+                      #np.expand_dims(np.concatenate(error_all),axis = 1)),
                         axis = 1,dtype=np.float64)
+print(arr)
+'''
+TO RUN ALL FRAME
 
 for frame in pd.unique(mini_df["Frame"]):
     working_arr = mini_df[mini_df["Frame"] == frame]
@@ -140,4 +148,4 @@ for frame in pd.unique(mini_df["Frame"]):
         neighbor = np.array(working_arr[working_arr["Label"] == label])
         all_combination = find_combinations(neighbor)
         print()
-
+'''
