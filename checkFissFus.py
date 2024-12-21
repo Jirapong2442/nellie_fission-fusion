@@ -46,8 +46,9 @@ def plot_corr(x,y,corr_score):
     plt.tight_layout()
     plt.show()
 
-dir_path = 'D:/Internship/NTU/algo_output/10s'
+dir_path = 'D:/Internship/NTU/algo_output/adjusted/10s/'
 
+'''
 mitometer_path = 'D:/Internship/NTU/algo_output/mito'
 mito_fission = []
 mito_fusion = []
@@ -71,7 +72,7 @@ for file in mito_fission:
 
 for file in mito_fusion:
     fission_all = check_fission_fusion_MM(file)
-
+'''
 # list to store files
 output_fission = []
 output_fusion = []
@@ -103,13 +104,55 @@ for file in output_fusion:
     else:
         fusion_df.append(df_event)
 
+fusion_df = np.array(fusion_df)
+fission_df = np.array(fission_df)
+all_event_fusion = np.sum(fusion_df,axis = 1)
+all_event_fission = np.sum(fission_df,axis = 1)
+x = np.array(([0.5],[0],[1],[2]))
+
+
+all_event_fusion = np.hstack((np.expand_dims(all_event_fusion,axis = 1),x))
+np.savetxt("adjusted_10s_all_fusion.csv",all_event_fusion,delimiter=',', fmt='%f' )
+
+all_event_fission = np.hstack((np.expand_dims(all_event_fission,axis = 1),x))
+np.savetxt("adjusted_10s_all_fission.csv",all_event_fission,delimiter=',', fmt='%f' )
+
 fiss_fus_ratios = []
+fiss_fus_image = np.zeros((4,1) )
+fiss_fus_std = np.zeros((4,1) )
+
 for i in range(len(fusion_df)):
     for j in range(len(fusion_df[i])):
         try:
             fiss_fus_ratios.append(fission_df[i][j] / fusion_df[i][j])
         except ZeroDivisionError:
             fiss_fus_ratios.append(0)
+
+fiss_fus_ratios = np.nan_to_num(fiss_fus_ratios)
+segment = len(fiss_fus_ratios)/4
+fiss_fus_ratios = np.array(fiss_fus_ratios)
+for i in range(len(fusion_df)):
+    fiss_fus_image[i] = np.average(fiss_fus_ratios[int(i*(segment)):int((i+1)*segment)])
+    fiss_fus_std[i] = np.std(fiss_fus_ratios[int(i*(segment)):int((i+1)*segment)], ddof=1 / np.sqrt(segment))
+
+fiss_fus_image[[1,0],:]= fiss_fus_image[[0,1],:]
+fiss_fus_std[[1,0],:]= fiss_fus_std[[0,1],:]
+
+fig, ax = plt.subplots()
+
+
+#create chart
+y_error =[fiss_fus_std[:,0], fiss_fus_std[:,0]] 
+ax.bar(x=np.arange(len(fiss_fus_image)), #x-coordinates of bars
+       height=fiss_fus_image[:,0], #height of bars
+       yerr=y_error, #error bar width
+       capsize=4) #length of error bar caps
+plt.show()
+
+x = np.array(([0.5],[0],[1],[2]))
+fiss_fus_image = np.hstack((fiss_fus_image,x))
+np.save("1_fiss_fus_ratio.npy",fiss_fus_image )
+
 
 
 

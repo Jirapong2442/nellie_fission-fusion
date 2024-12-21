@@ -13,7 +13,7 @@ def get_label(frame, data, isFusion,):
     return dup,dup_label
 
 # folder path
-dir_path = 'D:/Internship/NTU/algo_output'
+dir_path = 'D:/Internship/NTU/algo_output/'
 
 # list to store files
 output_fission = []
@@ -22,14 +22,15 @@ event = []
 
 # Iterate directory
 for path in os.listdir(dir_path):
-    for file in  os.listdir(os.path.join(dir_path, path)):
-    # check if current path is a file
-        if "output_fission" in file and os.path.isfile(os.path.join(dir_path, path,file)):
-            output_fission.append(os.path.join(dir_path, path,file))
-        if "output_fusion" in file and os.path.isfile(os.path.join(dir_path, path,file)):
-            output_fusion.append(os.path.join(dir_path, path,file))
-        if "event" in file and os.path.isfile(os.path.join(dir_path, path,file)):
-            event.append(os.path.join(dir_path, path,file))
+    if  "original" in path:
+        for file in  os.listdir(os.path.join(dir_path, path)):
+        # check if current path is a file
+            if "output_fission" in file and os.path.isfile(os.path.join(dir_path, path,file)):
+                output_fission.append(os.path.join(dir_path, path,file))
+            if "output_fusion" in file and os.path.isfile(os.path.join(dir_path, path,file)):
+                output_fusion.append(os.path.join(dir_path, path,file))
+            if "event" in file and os.path.isfile(os.path.join(dir_path, path,file)):
+                event.append(os.path.join(dir_path, path,file))
         
 for index in range(len(output_fission)):
     #event_path = "D:/Internship/NTU/algo_output/Start_1st_frame/1_0_event.csv"
