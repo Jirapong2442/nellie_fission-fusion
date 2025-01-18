@@ -69,81 +69,140 @@ def plot_multiple_roc(fpr_list, tpr_list, plot_label_list, names, title="Multipl
     # Display the plot
     plt.show()
 
+def get_performace_matrix(dir_path,result_df,name_df):
+
+    folders = os.listdir(dir_path)
+    for folder in folders:
+        files = os.listdir(os.path.join(dir_path,folder))
+        #for file in files:
+            #if "diff" in file:
+        file = files[-1]
+        value = np.load(os.path.join(dir_path,folder,file))
+        value = np.sum(value,axis = 0)
+
+        
+        if len(result_df) == 0:
+            result_df.append(value)
+            result_df = np.array(result_df)
+            name_df.append(folder)
+            name_df = np.array(name_df)
+        else:
+            result_df = np.vstack((result_df,value))
+            name_df = np.vstack((name_df,folder))
+                #plot coordinate name
+    return result_df,name_df
+
 if __name__ == "__main__":
     all_tpr = []
     all_fpr = []
-    all_label = []
-    #all_comb = ['0','5','10','15','17','19','21','23','25','31','50','75','100']
-    all_comb = ['23']
 
+    all_label = []
+
+    all_comb = ['0','5','10','15','17','19','21','23','25','31','50','75','100']
+    #all_comb = ['23']
+    
     for comb in all_comb:
         #comb = "15"
-        dir_path = "./gridsearch/test_neighbor_" + comb + "/"
-        folders = os.listdir(dir_path)
+        dir_path_n3_10s = "D:/Internship/NTU/data_for_script/gridsearch10s/test_neighbor_" + comb + "/"
+        dir_path_n2_10s = "D:/Internship/NTU/data_for_script/gridsearch10s_n2/test_neighbor_" + comb + "/"
+        dir_path_n4_10s = "D:/Internship/NTU/data_for_script/gridsearch10s_n4/test_neighbor_" + comb + "/"
+
+        dir_path_n3 = "D:/Internship/NTU/data_for_script/gridsearch/test_neighbor_" + comb + "/"
+        dir_path_n2 = "D:/Internship/NTU/data_for_script/gridsearchn2/test_neighbor_" + comb + "/"
+        dir_path_n4 = "D:/Internship/NTU/data_for_script/gridsearchn4/test_neighbor_" + comb + "/"
+        outpath = "./gridsearch/metrics_toxin/"
+
+        all_arr = []
         result = []
         name = []
+        
+        result_n3_10s,name_n3_10s = get_performace_matrix(dir_path_n3_10s,result,name)
+        result_n2_10s,name_n2_10s = get_performace_matrix(dir_path_n2_10s,result,name)
+        result_n4_10s,name_n4_10s = get_performace_matrix(dir_path_n4_10s,result,name)
 
-        if comb == '15':
+
+        result_n3,name_n3 = get_performace_matrix(dir_path_n3,result,name)
+        result_n3,name_n3 = get_performace_matrix(dir_path_n2,result,name)
+        result_n3,name_n3 = get_performace_matrix(dir_path_n4,result,name)
+        #if comb == '15':
             # for 15 comb to sort the file name
-            for i in range(int(len(folders)/4)):
-                if i == 0:
-                    folders = [folders[(i+1)*3 + i]] + folders[4*i: 4*(i) + 3] + folders[4* (i+1):]
-                else:
-                    folders = folders[0:4*i]+ [folders[(i+1)*3 + i]] + folders[4*i: 4*(i) + 3] + folders[4* (i+1):]
+        #    for i in range(int(len(folders)/4)):
+        #        if i == 0:
+        #            folders = [folders[(i+1)*3 + i]] + folders[4*i: 4*(i) + 3] + folders[4* (i+1):]
+        #        else:
+        #            folders = folders[0:4*i]+ [folders[(i+1)*3 + i]] + folders[4*i: 4*(i) + 3] + folders[4* (i+1):]
  
-        for folder in folders:
-            files = os.listdir(os.path.join(dir_path,folder))
-            #for file in files:
-                #if "diff" in file:
-            file = files[-1]
-            value = np.load(os.path.join(dir_path,folder,file))
-            value = np.sum(value,axis = 0)
 
-            
-            if len(result) == 0:
-                result.append(value)
-                result = np.array(result)
-                name.append(file)
-                name = np.array(name)
-            else:
-                result = np.vstack((result,value))
-                name = np.vstack((name,file))
+
+        plot_label = []
+        area_thresh = []
+        for n in name:
+            tmp = []
+            area = []
+            x = n[0]
+            if len(x) == 16 or len(x) == 15:
+                tmp = x[5:9] + x[-1]
+                area = x[5:9]
+
+            elif len(x) == 17:
+                tmp = x[5:9] + x[-2:]
+                area = x[5:9]
+
+            elif len(x) ==18:
+                tmp = x[5:9] + x[-3:]
+                area = x[5:9]
+
+            plot_label.append(tmp)
+            area_thresh.append(area)
+
+        all_label.append(plot_label)
         print(comb)
         #print(np.sum(result,axis = 0)) 
-        
-        tpr = result[:,0]/(result[:,0] + result[:,3]) #TP/(TP+FN)
-        fpr = result[:,2]/(result[:,2] + result[:,1]) #TP/(TP+FN)
-        
-        # add 0,0 and 1,1
-        tpr = np.concatenate([[1],tpr,[0]])
-        fpr = np.concatenate([[1],fpr,[0]])
+        #TP delete the last row (last = all negative = should be 0)
+        result[:,0] = result[:,0] - result[-1,0]
 
-        all_tpr.append(tpr)
-        all_fpr.append(fpr)       
+        #TN delete first row = fist row = all positive = TN should be 0
+        result[:,1] = result[:,1] - result[0,1]
+
+        # FP delete the last row (last = all negative = should be 0)
+        result[:,2] = result[:,2] - result[-1,2]
+
+        # FN delete first row = fist row = all positive = FN should be 0
+        result[:,3] = result[:,3] - result[0,3]
 
         # TP TN FP FN
-        # more combination threshold = more positive = approching 11.
-        # less == approacing  00 
+        tpr = result[:,0]/(result[:,0] + result[:,3]) #TP/(TP+FN) recall
+        fpr = result[:,2]/(result[:,2] + result[:,1]) 
+        
+        precision = result[:,0]/(result[:,0] + result[:,2])
+        recall =tpr
+        f1_score = (2 * precision * recall) / (precision + recall)
+        # add 0,0 and 1,1
+        tpr_extended = np.concatenate([[1],tpr,[0]])
+        fpr_extended = np.concatenate([[1],fpr,[0]])
+
         auc = np.trapz(tpr,x = fpr)
         print(auc)
 
-        #plot coordinate name
-        plot_label = []
-        for n in name:
-            tmp = []
-            x = n[0]
-            if len(x) == 18:
-                tmp = x[5:7] + x[12:14]
+        all_tpr.append(tpr_extended)
+        all_fpr.append(fpr_extended)  
 
-            elif len(x) == 21:
-                tmp = x[5:9] + x[14:17]
-
-            elif len(x) == 20:
-                tmp = x[5:8] + x[13:16]
-
-            plot_label.append(tmp)
-
-        all_label.append(plot_label)
+        #which is more common 1. store everythin in the same file different label, store every in different accessible file
+        #save file
+        
+        all_arr = np.concatenate((np.expand_dims((np.repeat(comb,len(tpr))),axis = 1), #remove the 1 and 0 at the beginninng and the end
+                                    np.reshape(np.array(area_thresh),(21,1)),
+                                    np.expand_dims((np.repeat('3',len(tpr))),axis = 1),
+                                    np.expand_dims(np.array(tpr),axis = 1),
+                                    np.expand_dims(np.array(fpr),axis = 1),
+                                    np.expand_dims((np.repeat(auc,len(tpr))),axis = 1),
+                                    np.reshape(np.array(precision),(21,1)),
+                                    np.reshape(np.array(recall),(21,1)),
+                                    np.reshape(np.array(f1_score),(21,1))),
+                                    axis = 1 )
+        column_names_event = ["combination_threshold" , "area_threshold" , "num_neighbor","tpr", "fpr", "auc","precesion","recall","f1_score"]
+        possible_event_all = pd.DataFrame(all_arr, columns=column_names_event)
+        possible_event_all.to_csv(os.path.join(outpath,f'{comb}_metrics.csv'), index=False) 
 
     plot_multiple_roc(all_fpr, all_tpr, all_label, all_comb, "Comparison of ROC Curves")
     

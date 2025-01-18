@@ -7,7 +7,7 @@ import tifffile
 from tqdm import tqdm
 import time
 import os
-num_neighbour = 2
+num_neighbour = 4
 
 def check_Fis_Fus_Mitometer (file_path,timeDim):
     #check fission fusion from mitometer output
@@ -515,24 +515,29 @@ stream_threshold = ['0'
                     '3','3.25','3.5','3.75',
                     '4','4.25','4.5','4.75','5']
 for t in range(len(stream_threshold)):
-    stream_frame = ['1','1','1','1','5','5','10','10']
-    stream_con = ['0','0.5','1','2','1','0.5','0','2']
+    #stream_frame = ['1','1','1','1','5','5','10','10']
+    stream_con = ['0','05','1','2']
     diff_threshold = float(stream_threshold[t])
     # ['0','5','10', '33','36','37','40','45','50','100']
     combination_threshold = 1
+    #comb_threshold = ['0', '5', '10', '15', '17', '19' , '21', '23','25', '31', '50', '75', '100'] #,
 
     for s in range(len(stream_con)):
         im_concen = stream_con[s]
-        im_frame = stream_frame[s]
-        print(im_concen+"_"+im_frame)
+        #im_frame = stream_frame[s]
+        print(im_concen+"_")
 
-        main_dir = "/home/jirapong/jirapong/nellie_output"
-        out_path = "/home/jirapong/nellie/my_script/all_n2"
+        main_dir = "/home/jirapong/jirapong/input_10s/080620/nellie_output/"
+        out_path = "/home/jirapong/nellie/my_script/all_10s_n4"
 
-        file_path_feature = main_dir + "/" + im_frame + "_resized_" + im_concen + "_glu_1min_#1.ome-ch0-features_components.csv"
-        seg_path = main_dir+  "/" + im_frame + "_resized_"+ im_concen +"_glu_1min_#1.ome-ch0-im_instance_label.ome.tif"
-        reassigned_path = main_dir +"/" + im_frame + "_resized_" + im_concen+ "_glu_1min_#1.ome-ch0-im_obj_label_reassigned.ome.tif"
-        output_name = im_frame + "_" + im_concen
+        file_path_feature = main_dir + "10s_" + im_concen + "glu"+ ".ome-ch0-features_components.csv"
+        seg_path = main_dir + "10s_" + im_concen + "glu"+ ".ome-ch0-im_instance_label.ome.tif"
+        reassigned_path = main_dir + "10s_" + im_concen + "glu"+ ".ome-ch0-im_obj_label_reassigned.ome.tif"
+
+        #file_path_feature = main_dir + "/" + im_frame + "_resized_" + im_concen + ".ome-ch0-features_components.csv"
+        #seg_path = main_dir+  "/" + im_frame + "_resized_"+ im_concen +"_glu_1min_#1.ome-ch0-im_instance_label.ome.tif"
+        #reassigned_path = main_dir +"/" + im_frame + "_resized_" + im_concen+ "_glu_1min_#1.ome-ch0-im_obj_label_reassigned.ome.tif"
+        output_name =  im_concen
 
         out_dir = str(diff_threshold) + "_" + str(int(combination_threshold*100))
         out_path = os.path.join(out_path,out_dir)
