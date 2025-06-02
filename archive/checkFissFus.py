@@ -1,5 +1,5 @@
 import scipy.ndimage
-from analysis import get_nellie_inputs, get_nellie_outputs
+from archive.analysis import get_nellie_inputs, get_nellie_outputs
 import tifffile
 import numpy as np
 import pandas as pd

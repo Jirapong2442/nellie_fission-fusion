@@ -2,10 +2,23 @@ import numpy as np
 import pandas as pd
 import os
 
-# shift event from the first frame of fission
-# 
-path = "./nellie_output/mdivi/"
-out_path = "./nellie_output/glu/"
+'''
+change to all post event because the simulated data annotate event at the end 
+    fission: 0 pre -> 0 + 0 post: 
+        - annotate post-event where we have neighbor (my algorithm)
+        - the simulated data also annotate post-event      
+
+    fusion: 0 + 0 -> 0
+        - annotate pre-event where we have neighbor (my algorithm)
+        - the simulated data also annotate post event
+
+if we aim to compare the result of simulated algorithm and estimated event, need to shift the result of the algorithm output on fusion
+
+
+
+'''
+path = "./nellie_output/simulated/thick_fission/"
+out_path = "./nellie_output/simulated/thick_fission/shifted/"
 output_fission = []
 output_fusion = []
 fission_df = []
@@ -26,27 +39,18 @@ def get_fiss_fus (file_array , array):
 
 
 for file in os.listdir(path):
-    if "fission" in file and os.path.isfile(os.path.join(path,file)):
-        output_fission.append(os.path.join(path,file))
+    if "fusion" in file and os.path.isfile(os.path.join(path,file)):
+        output_fusion.append(os.path.join(path,file))
 
 
-for file in output_fission:
+for file in output_fusion:
     filename = file
     df = pd.read_csv(file) 
     df = np.array(df)
-    rolled_df = np.roll(df, -1)
+    rolled_df = np.roll(df, 1)
     rolled_df = pd.DataFrame(rolled_df)
-    if len(file) == 59:
-        rolled_df.to_csv(os.path.join(out_path,file[-37:]),   index=False)
-
-    elif len(file) == 55:
-        rolled_df.to_csv(os.path.join(out_path,file[-33:]),   index=False)
-
-    elif len(file) == 64:
-        rolled_df.to_csv(os.path.join(out_path,file[-42:]),   index=False)
-
-    elif len(file) == 58:
-        rolled_df.to_csv(os.path.join(out_path,file[-36:]),   index=False)
+    rolled_df.to_csv(os.path.join(out_path,file.split('/')[-1]),   index=False)
+ 
     
 
         

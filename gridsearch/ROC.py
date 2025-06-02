@@ -69,8 +69,10 @@ def plot_multiple_roc(fpr_list, tpr_list, plot_label_list, names, title="Multipl
     # Display the plot
     plt.show()
 
-def get_performace_matrix(dir_path,result_df,name_df):
+def get_performace_matrix(dir_path,):
 
+    result_df = []
+    name_df = []
     folders = os.listdir(dir_path)
     for folder in folders:
         files = os.listdir(os.path.join(dir_path,folder))
@@ -110,20 +112,25 @@ if __name__ == "__main__":
         dir_path_n3 = "D:/Internship/NTU/data_for_script/gridsearch/test_neighbor_" + comb + "/"
         dir_path_n2 = "D:/Internship/NTU/data_for_script/gridsearchn2/test_neighbor_" + comb + "/"
         dir_path_n4 = "D:/Internship/NTU/data_for_script/gridsearchn4/test_neighbor_" + comb + "/"
-        outpath = "./gridsearch/metrics_toxin/"
+        outpath = "./gridsearch/metrics_toxin/n4/"
 
         all_arr = []
         result = []
         name = []
         
-        result_n3_10s,name_n3_10s = get_performace_matrix(dir_path_n3_10s,result,name)
-        result_n2_10s,name_n2_10s = get_performace_matrix(dir_path_n2_10s,result,name)
-        result_n4_10s,name_n4_10s = get_performace_matrix(dir_path_n4_10s,result,name)
+        result_n3_10s,name_n3_10s = get_performace_matrix(dir_path_n3_10s)
+        result_n2_10s,name_n2_10s = get_performace_matrix(dir_path_n2_10s)
+        result_n4_10s,name_n4_10s = get_performace_matrix(dir_path_n4_10s)
 
 
-        result_n3,name_n3 = get_performace_matrix(dir_path_n3,result,name)
-        result_n3,name_n3 = get_performace_matrix(dir_path_n2,result,name)
-        result_n3,name_n3 = get_performace_matrix(dir_path_n4,result,name)
+        result_n3,name_n3 = get_performace_matrix(dir_path_n3)
+        result_n2,name_n2 = get_performace_matrix(dir_path_n2)
+        result_n4,name_n4 = get_performace_matrix(dir_path_n4)
+
+        result_n2_all = result_n2_10s + result_n2
+        result_n3_all = result_n3_10s + result_n3
+        result_n4_all = result_n4_10s + result_n4
+
         #if comb == '15':
             # for 15 comb to sort the file name
         #    for i in range(int(len(folders)/4)):
@@ -136,7 +143,7 @@ if __name__ == "__main__":
 
         plot_label = []
         area_thresh = []
-        for n in name:
+        for n in name_n2_10s:
             tmp = []
             area = []
             x = n[0]
@@ -159,21 +166,23 @@ if __name__ == "__main__":
         print(comb)
         #print(np.sum(result,axis = 0)) 
         #TP delete the last row (last = all negative = should be 0)
-        result[:,0] = result[:,0] - result[-1,0]
+        #result[:,0] = result[:,0] - result[-1,0]
 
         #TN delete first row = fist row = all positive = TN should be 0
-        result[:,1] = result[:,1] - result[0,1]
+        #result[:,1] = result[:,1] - result[0,1]
 
         # FP delete the last row (last = all negative = should be 0)
-        result[:,2] = result[:,2] - result[-1,2]
+        #result[:,2] = result[:,2] - result[-1,2]
 
         # FN delete first row = fist row = all positive = FN should be 0
-        result[:,3] = result[:,3] - result[0,3]
+        #result[:,3] = result[:,3] - result[0,3]
+        result = result_n4_all
 
         # TP TN FP FN
         tpr = result[:,0]/(result[:,0] + result[:,3]) #TP/(TP+FN) recall
         fpr = result[:,2]/(result[:,2] + result[:,1]) 
         
+        accuracy = (result[:,0] + result[:,1]) / (result[:,0] + result[:,1]  + result[:,2] + result[:,3] )
         precision = result[:,0]/(result[:,0] + result[:,2])
         recall =tpr
         f1_score = (2 * precision * recall) / (precision + recall)
@@ -181,7 +190,7 @@ if __name__ == "__main__":
         tpr_extended = np.concatenate([[1],tpr,[0]])
         fpr_extended = np.concatenate([[1],fpr,[0]])
 
-        auc = np.trapz(tpr,x = fpr)
+        auc = np.trapz(tpr_extended,x = fpr_extended)
         print(auc)
 
         all_tpr.append(tpr_extended)
@@ -196,11 +205,12 @@ if __name__ == "__main__":
                                     np.expand_dims(np.array(tpr),axis = 1),
                                     np.expand_dims(np.array(fpr),axis = 1),
                                     np.expand_dims((np.repeat(auc,len(tpr))),axis = 1),
+                                    np.reshape(np.array(accuracy),(21,1)),
                                     np.reshape(np.array(precision),(21,1)),
                                     np.reshape(np.array(recall),(21,1)),
                                     np.reshape(np.array(f1_score),(21,1))),
                                     axis = 1 )
-        column_names_event = ["combination_threshold" , "area_threshold" , "num_neighbor","tpr", "fpr", "auc","precesion","recall","f1_score"]
+        column_names_event = ["combination_threshold" , "area_threshold" , "num_neighbor","tpr", "fpr", "auc", "accuracy", "precesion","recall","f1_score"]
         possible_event_all = pd.DataFrame(all_arr, columns=column_names_event)
         possible_event_all.to_csv(os.path.join(outpath,f'{comb}_metrics.csv'), index=False) 
 

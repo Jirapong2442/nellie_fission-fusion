@@ -45,7 +45,7 @@ def plot_multiple_line(fpr_list, tpr_list, plot_label_list, names, title="Multip
     # Add grid, labels, and title
     plt.grid(True, alpha=0.3)
     plt.xlabel('Number of frame')
-    plt.ylabel('number of label')
+    plt.ylabel('number of event')
     plt.title(title)
     
     
@@ -76,6 +76,7 @@ if __name__ == "__main__":
 
     files= os.listdir(label_path)
     all_name = [files[i][0:5] for i in range(len(files))]
+    #all_name = ['control 10min' , 'control' , 'mdivi10min','mdivi']
 
     for file in files:
         df = pd.read_csv(label_path + file)

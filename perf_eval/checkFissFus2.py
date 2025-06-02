@@ -1,5 +1,4 @@
 import scipy.ndimage
-from analysis import get_nellie_inputs, get_nellie_outputs
 import tifffile
 import numpy as np
 import pandas as pd
@@ -50,11 +49,18 @@ def plot_corr(x,y,corr_score):
     plt.tight_layout()
     plt.show()
 
-def get_fiss_fus (file_array , array):
+def get_fiss_fus (file_array , array, isProb):
     all_frame = []
     for file in file_array:
         df = pd.read_csv(file) 
-        df_event = np.count_nonzero(df, axis=0).tolist()
+        if isProb:
+            #df_event = np.count_nonzero(df, axis=0).tolist() #count all non zero
+            df_test = np.where(df<1,0,df) 
+            df_event = np.count_nonzero(df_test, axis=0).tolist()  # count only value that == 1
+
+        else:
+            df_event = np.sum(df, axis=0).tolist()
+
         frame = np.expand_dims(np.arange(len(df_event)),axis=1)
         all_frame.append(frame)
         if len(array) == 0:
@@ -63,7 +69,7 @@ def get_fiss_fus (file_array , array):
             array.append(df_event)
     return array,all_frame
 
-def get_fiss_fus_all (path):
+def get_fiss_fus_all (path , isProb = True, isBound_to_min = True):
     output_fission = []
     output_fusion = []
     fission_df = []
@@ -75,8 +81,14 @@ def get_fiss_fus_all (path):
         if "fusion" in file and os.path.isfile(os.path.join(path,file)):
             output_fusion.append(os.path.join(path,file))
 
-    fission_df,fission_frame = get_fiss_fus(output_fission,fission_df)
-    fusion_df,fusion_frame = get_fiss_fus(output_fusion,fusion_df)
+    fission_df,fission_frame = get_fiss_fus(output_fission,fission_df, isProb)
+    fusion_df,fusion_frame = get_fiss_fus(output_fusion,fusion_df , isProb)
+    
+    # since all of the fram of each event are not the same, bound to min will change frame to the lowest possible frame 
+    if isBound_to_min: 
+        minimum = np.min([len(x) for x in fission_df])
+        fission_df = np.array([x[0:minimum] for x in fission_df])
+        fusion_df = np.array([x[0:minimum] for x in fusion_df])
 
     return fission_df, fusion_df, fission_frame , fusion_frame
     
@@ -164,47 +176,116 @@ def plot_two_axis(fpr_list, tpr_list, plot_label_list, names, title="Multiple RO
     # Display the plot
     plt.show()
 
+def fiss_fus_reassigned_label (feature_component_path):
+    '''
+    fission fusion from nellie author:
+
+    calculate fissionfusion from label difference between frame:
+    1. label_difference = current label (raw) - first frame label
+    2. if label difference  - prevois label diff > 0 = fission event
+    3. if label difference - previous label diff < 0 = fusion event
+
+    basically, raw_label frame t - raw_label frame t-1 = label difference
+
+    
+    cons = 1 frame can only have either fission or fusion event since they count the difference between 
+    unique reassigned label between each frame.
+
+    More label = fission event 
+    Less label = fusion event
+
+    '''
+    nellie_df = pd.read_csv(feature_component_path)
+    nellie_df_small = nellie_df[['t', 'reassigned_label_raw', 'label']]
+    max_frame_num = int(nellie_df_small['t'].max()) + 1
+    total_num_reassigned_labels = len(nellie_df_small['reassigned_label_raw'].unique())
+
+    events_per_frame = []
+    label_differences = None
+    for t in range(max_frame_num):
+        num_unique_labels_in_t = len(nellie_df_small.loc[nellie_df_small['t'] == t, 'label'].unique())
+        label_difference = num_unique_labels_in_t - total_num_reassigned_labels
+        if label_differences is None:
+            label_differences = [label_difference]
+            events_per_frame.append(0)
+            continue
+        events_per_frame.append(label_difference - label_differences[-1])
+        label_differences.append(label_difference)
+
+    fission_events = sum([event for event in events_per_frame if event > 0])
+    fusion_events = -sum([event for event in events_per_frame if event < 0])
+
+    event_fission = []
+    event_fusion = []
+    for event in events_per_frame:
+        if event == 0:
+            event_fission.append(0)
+            event_fusion.append(0)
+        elif event > 0:
+            event_fission.append(event)
+            event_fusion.append(0)
+        elif event < 0:
+            event_fission.append(0)
+            event_fusion.append(-event)
+        
+
+    return fission_events, fusion_events, event_fission, event_fusion
+
+
+
+
 if __name__ == "__main__":
-    dir_path_tox = "./nellie_output/toxicity"
-    dir_path_mdivi = "./nellie_output/mdivi"
+    #file sequence: control 10min, control, mdivi 10min, mdivi
+    #file sequence (toxin): control, FCCP, oliomycin, rotenone
+    dir_path_tox = "./nellie_output/toxicity/adjusted"
+    dir_path_mdivi = "./nellie_output/mdivi/adjusted"
 
-    dir_path_mdivi_self = "./self_event/mdivi/"
-    dir_path_tox_self = "./self_event/toxicity/"
+    dir_path_mdivi_self = "./self_event/mdivi/num"
+    dir_path_tox_self = "./self_event/toxicity/num"
 
-    mitometer_path = 'D:/Internship/NTU/algo_output/mito'
+    dir_tox_meter = "D:/Internship/NTU/my_script/mitometer_output/toxin"
+    dir_mdivi_meter = "D:/Internship/NTU/my_script/mitometer_output/mdivi"
+
+    mdivi_dir = "D:/Internship/NTU/my_script/mitometer_output/mdivi"
+
     mito_fission = []
     mito_fusion = []
 
     mito_fiss_all = []
     mito_fus_all = []
 
-    column_tox = os.listdir(dir_path_tox)
-    column_glu = os.listdir(dir_path_mdivi)
+    fission_num, fusion_num, fission_event_nellie, fusion_event_nellie  = fiss_fus_reassigned_label("D:/Internship/NTU/nellie_output/nellie_output/toxins/time_ins_control.ome-ch0-features_components.csv")
+
     '''
-    for file in os.listdir(mitometer_path):
-    # check if current path is a file
-        if "fission" in file and os.path.isfile(os.path.join(mitometer_path,file)):
-            mito_fission.append(os.path.join(mitometer_path,file))
-        if "fusion" in file and os.path.isfile(os.path.join(mitometer_path,file)):
-            mito_fusion.append(os.path.join(mitometer_path,file))
-
-    for file in mito_fission:
-        fission_all = check_fission_fusion_MM(file)
-        if len(mito_fiss_all) == 0:
-            mito_fiss_all = [fission_all]
-        else:
-            mito_fiss_all.append(fission_all)
-
-
-    for file in mito_fusion:
-        fission_all = check_fission_fusion_MM(file)
+    mitometer output
+    extract output from mitometer fission fusion result
     '''
+    fission_tox_meter, fusion_tox_meter, fiss_frame_meter, fus_frame_meter = get_fiss_fus_all(dir_tox_meter)
+    fission_mdivi_meter, fusion_mdivi_meter, fiss_frame_meter_tox, fus_frame_meter_tox = get_fiss_fus_all(dir_mdivi_meter)
+    fusion_mdivi_meter[2] = fusion_mdivi_meter[2][0:61]
+    fission_mdivi_meter[2] = fission_mdivi_meter[2][0:61]
 
-    
+    # 10 min fission
+    fission_mdivi_10minimum = np.array([fission_mdivi_meter[0],fission_mdivi_meter[2] ])
+    # 1.3 second fission
+    fission_mdivi_meter = [fission_mdivi_meter[1],fission_mdivi_meter[3] ]
+    minimum = np.min([len(x) for x in fission_mdivi_meter])
+    fission_mdivi_meter = np.array([x[0:minimum] for x in fission_mdivi_meter])
+
+    # 10 min fusion
+    fusion_mdivi_10min = np.array([fusion_mdivi_meter[0],fusion_mdivi_meter[2] ])
+    # 1.3 second fusion
+    fusion_mdivi_meter = [fusion_mdivi_meter[1],fusion_mdivi_meter[3] ]
+    minimum = np.min([len(x) for x in fusion_mdivi_meter])
+    fusion_mdivi_meter = np.array([x[0:minimum] for x in fusion_mdivi_meter])
+
+    '''
+    nellie output
+    extract output from nellie fission fusion result
+    '''
     fission_tox, fusion_tox, fiss_frame, fus_frame = get_fiss_fus_all(dir_path_tox)
     fiss_fus_ratios_tox = calculate_fiss_fus_ratio(fission_tox, fusion_tox)
     
-
     fission_tox_self, fusion_tox_self, fiss_self_frame, fus_self_frame = get_fiss_fus_all(dir_path_tox_self)
     fiss_fus_ratios_tox_self = calculate_fiss_fus_ratio(fission_tox_self, fusion_tox_self)
 
@@ -220,14 +301,15 @@ if __name__ == "__main__":
     fusion_tox_all = [list(fusion_tox[i][j] + fusion_tox_self[i][j] for j in range(len(fusion_tox_self[i]))) for i in range(len(fusion_tox))]
     fiss_fus_ratios_tox_all = calculate_fiss_fus_ratio(fiss_tox_all, fusion_tox_all)
     
-    #all connected components
-
+    '''
+        extract all label, area, raw label
+    '''
     #check dims and verify that it's correct
     all_label = []
     all_area = []
     all_index = []
     all_raw_label = []
-    label_path = "./check_label&area/mdivi/"
+    label_path = "./check_label&area/toxicity/"
 
     files= os.listdir(label_path)
     all_name = [files[i][0:5] for i in range(len(files))]
@@ -300,22 +382,22 @@ if __name__ == "__main__":
     #plot fission fusion by frame
     #classify by toxin type
     # shift data of 0 to the right
-    ending = 140
+    ending = 61
     starting = 2
-    control =   [fission_tox[0][1:ending]] + [fusion_tox[0][1:ending]] + [all_stat_control_all[starting-1:ending-1]] #+ [all_raw_label[0][starting:ending]] #
-    control_frame  =  [fiss_frame[0][1:ending]] + [fus_frame[0][1:ending]] +  [fiss_frame[0][starting:ending]] #+ [fiss_frame[0][starting:ending]]#
+    control =   [fission_mdivi_self[0][1:ending]] + [fusion_mdivi_self[0][1:ending]] #+ [all_stat_control_self[starting-1:ending-1]] #+ [all_raw_label[0][starting:ending]] #
+    control_frame  =  [fiss_self_frame_mdivi[0][1:ending]] + [fus_self_frame_mdivi[0][1:ending]] #+  [fiss_frame[0][starting:ending]] #+ [fiss_frame[0][starting:ending]]#
 
-    FCCP =  [fission_tox[1][1:ending]] + [fusion_tox[1][1:ending]] +[all_stat_FCCP_all[starting-1:ending-1]] #+ [all_raw_label[1][starting:ending]] #
-    FCCP_frame = [fiss_frame[1][1:ending]] + [fus_frame[1][1:ending]] +   [fiss_frame[1][starting:ending]] #+ [fiss_frame[1][starting:ending]]#
+    FCCP =  [fission_mdivi_self[1][1:ending]] + [fusion_mdivi_self[1][1:ending]] #+[all_stat_FCCP_self[starting-1:ending-1]] #+ [all_raw_label[1][starting:ending]] #
+    FCCP_frame = [fiss_self_frame_mdivi[1][1:ending]] + [fus_self_frame_mdivi[1][1:ending]] #+   [fiss_frame[1][starting:ending]] #+ [fiss_frame[1][starting:ending]]#
 
-    oligo =    [fission_tox[2][1:ending]] + [fusion_tox[2][1:ending]] + [all_stat_oligo_all[starting-1:ending-1]] #+ [all_raw_label[2][starting:ending]]#
-    oligo_frame = [fiss_frame[2][1:ending]] + [fus_frame[2][1:ending]] + [fiss_frame[2][starting:ending]] #+  [fiss_frame[2][starting:ending]]#
+    oligo =    [fission_mdivi_self[2][1:ending]] + [fusion_mdivi_self[2][1:ending]]# + [all_stat_oligo_self[starting-1:ending-1]] #+ [all_raw_label[2][starting:ending]]#
+    oligo_frame = [fiss_self_frame_mdivi[2][1:ending]] + [fus_self_frame_mdivi[2][1:ending]] #+ [fiss_frame[2][starting:ending]] #+  [fiss_frame[2][starting:ending]]#
 
-    Rotenone = [fission_tox[3][1:ending]] + [fusion_tox[3][1:ending]] + [all_stat_Rotenone_all[starting-1:ending-1]] #+ [all_raw_label[3][starting:ending]] #
-    Rotenone_frame =  [fiss_frame[3][1:ending]] + [fus_frame[3][1:ending]] + [fiss_frame[3][starting:ending]]#+ [fiss_frame[3][starting:ending]]#
+    Rotenone = [fission_mdivi_self[3][1:ending]] + [fusion_mdivi_self[3][1:ending]]# + [all_stat_Rotenone_self[starting-1:ending-1]] #+ [all_raw_label[3][starting:ending]] #
+    Rotenone_frame =  [fiss_self_frame_mdivi[3][1:ending]] + [fus_self_frame_mdivi[3][1:ending]] #+ [fiss_frame[3][starting:ending]]#+ [fiss_frame[3][starting:ending]]#
     
     #plot_two_axis(Rotenone_frame,Rotenone, Rotenone_frame, [  'fission-fusion ratio', 'all component'] , "number of component in Rotenone")
-    plot_multiple_line(Rotenone_frame,Rotenone, Rotenone_frame, [ 'fission' , 'fusion', 'fission-fusion ratio'] , "number of component in Rotenone")
+    plot_multiple_line(Rotenone_frame,Rotenone, Rotenone_frame, [ 'fission' , 'fusion'] , "number of fission/fusion MDIVI 10 min")
 
     plt.boxplot([all_stat_control_all_log,all_stat_FCCP_all_log, all_stat_oligo_all_log,all_stat_Rotenone_all_log], labels=[ 'control','FCCP', 'oligo', 'Rotenone'])
 
