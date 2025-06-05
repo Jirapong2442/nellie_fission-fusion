@@ -7,6 +7,7 @@ from checkFissFus2 import get_fiss_fus_all
 from plot_area_label import plot_multiple_line
 from significance_test import sliding_window_cumsum
 import matplotlib.pyplot as plt
+from checkim import plot_labels
 
 # query .log data
 event_all_log = []

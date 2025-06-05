@@ -578,7 +578,7 @@ def runframe(nearest_N,isFusion,label,interested_frame,fus_fiss_arr, percent,err
                 dists = np.array(dists,dtype=np.float64)
                 label_arr = np.array(label_arr,dtype=np.float64)
             
-        except:
+        except: #never execute here in simulation code. 
             combinations = np.concatenate(combinations)
             section_index = int(len(combinations)/4)
             pre_event_volume =  np.concatenate(np.expand_dims(combinations[:section_index],axis=0))
@@ -626,8 +626,21 @@ def runframe(nearest_N,isFusion,label,interested_frame,fus_fiss_arr, percent,err
         return unique_arr
 
     else:
+        mask = np.isin(nearest_N['reassigned_label'],label)
+        _, idx = np.unique(nearest_N[mask]['x_corr'].to_numpy().astype(np.float64), return_index=True)
+        coor_x = nearest_N[mask]['x_corr'].to_numpy().astype(np.float64)[np.sort(idx)]
+
+        _, idx = np.unique(nearest_N[mask]['y_corr'].to_numpy().astype(np.float64), return_index=True)
+        coor_y = nearest_N[mask]['y_corr'].to_numpy().astype(np.float64)[np.sort(idx)]
+
+        coor_x = np.expand_dims(coor_x, axis =1 )
+        coor_y = np.expand_dims(coor_y, axis = 1)
+        coor_all = np.concatenate((coor_x,coor_y),axis = 1)
+
+        unique_arr = np.array([np.append(np.zeros(4), arr) for arr in coor_all])
+
         fus_fiss_arr[label-1][interested_frame[1]] += np.abs(comp_before-comp_after)
-        return None
+        return unique_arr
 
 def append_NN(NN,labels,frame,neighbor_arr,isFusion):
     label_NN = np.full(shape=(NN.shape[0],1) , fill_value = labels)

@@ -3,11 +3,8 @@ import numpy as np
 import pandas as pd
 import cv2
 from scipy.ndimage import center_of_mass, extrema
-import napari
-from scipy.ndimage import center_of_mass   
-
+import napari 
 import matplotlib.pyplot as plt
-from scipy.ndimage import center_of_mass
 from skimage import measure
 '''
 def get_label_contour(label_data, label_id):
@@ -48,8 +45,8 @@ def plot_labels(csvPath,segmented_path,reassigned_path,contour_label):
 
         # !!!!!cannot find a label since it always start over if we use range(len(unique_label))
         for label in unique_label:
-            all_extrema = extrema(labeled_im_frame == label)
-            centroid = all_extrema[3]
+            all_extrema = center_of_mass(labeled_im_frame == label)
+            centroid = all_extrema#[3]
             centroid = np.array(list(centroid))
             centroids.append(np.append(frame, centroid))
             
