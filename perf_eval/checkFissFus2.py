@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import scipy.stats
 import os
-
 from plot_area_label import plot_multiple_line
 import matplotlib.pyplot as plt
 
@@ -231,9 +230,6 @@ def fiss_fus_reassigned_label (feature_component_path):
 
     return fission_events, fusion_events, event_fission, event_fusion
 
-
-
-
 if __name__ == "__main__":
     #file sequence: control 10min, control, mdivi 10min, mdivi
     #file sequence (toxin): control, FCCP, oliomycin, rotenone
@@ -259,6 +255,7 @@ if __name__ == "__main__":
     '''
     mitometer output
     extract output from mitometer fission fusion result
+    #TODO more result from mitometer
     '''
     fission_tox_meter, fusion_tox_meter, fiss_frame_meter, fus_frame_meter = get_fiss_fus_all(dir_tox_meter)
     fission_mdivi_meter, fusion_mdivi_meter, fiss_frame_meter_tox, fus_frame_meter_tox = get_fiss_fus_all(dir_mdivi_meter)
@@ -302,7 +299,7 @@ if __name__ == "__main__":
     fiss_fus_ratios_tox_all = calculate_fiss_fus_ratio(fiss_tox_all, fusion_tox_all)
     
     '''
-        extract all label, area, raw label
+        extract all label, area, raw label for graph plotting
     '''
     #check dims and verify that it's correct
     all_label = []
@@ -384,6 +381,11 @@ if __name__ == "__main__":
     # shift data of 0 to the right
     ending = 61
     starting = 2
+    df_fission_event = fission_tox
+    df_fission_frame = fiss_frame
+    df_fusion_event = fusion_tox
+    df_fusion_frame = fus_frame
+    '''
     control =   [fission_mdivi_self[0][1:ending]] + [fusion_mdivi_self[0][1:ending]] #+ [all_stat_control_self[starting-1:ending-1]] #+ [all_raw_label[0][starting:ending]] #
     control_frame  =  [fiss_self_frame_mdivi[0][1:ending]] + [fus_self_frame_mdivi[0][1:ending]] #+  [fiss_frame[0][starting:ending]] #+ [fiss_frame[0][starting:ending]]#
 
@@ -395,9 +397,21 @@ if __name__ == "__main__":
 
     Rotenone = [fission_mdivi_self[3][1:ending]] + [fusion_mdivi_self[3][1:ending]]# + [all_stat_Rotenone_self[starting-1:ending-1]] #+ [all_raw_label[3][starting:ending]] #
     Rotenone_frame =  [fiss_self_frame_mdivi[3][1:ending]] + [fus_self_frame_mdivi[3][1:ending]] #+ [fiss_frame[3][starting:ending]]#+ [fiss_frame[3][starting:ending]]#
+    '''
+    control =   [df_fission_event[0][1:ending]] + [df_fusion_event[0][1:ending]] #+ [all_stat_control_self[starting-1:ending-1]] #+ [all_raw_label[0][starting:ending]] #
+    control_frame  =  [df_fission_frame[0][1:ending]] + [df_fusion_frame[0][1:ending]] #+  [fiss_frame[0][starting:ending]] #+ [fiss_frame[0][starting:ending]]#
+
+    FCCP =  [df_fission_event[1][1:ending]] + [df_fusion_event[1][1:ending]] #+[all_stat_FCCP_self[starting-1:ending-1]] #+ [all_raw_label[1][starting:ending]] #
+    FCCP_frame = [df_fission_frame[1][1:ending]] + [df_fusion_frame[1][1:ending]] #+   [fiss_frame[1][starting:ending]] #+ [fiss_frame[1][starting:ending]]#
+
+    oligo =    [df_fission_event[2][1:ending]] + [df_fusion_event[2][1:ending]]# + [all_stat_oligo_self[starting-1:ending-1]] #+ [all_raw_label[2][starting:ending]]#
+    oligo_frame = [df_fission_frame[2][1:ending]] + [df_fusion_frame[2][1:ending]] #+ [fiss_frame[2][starting:ending]] #+  [fiss_frame[2][starting:ending]]#
+
+    Rotenone = [df_fission_event[3][1:ending]] + [df_fusion_event[3][1:ending]]# + [all_stat_Rotenone_self[starting-1:ending-1]] #+ [all_raw_label[3][starting:ending]] #
+    Rotenone_frame =  [df_fission_frame[3][1:ending]] + [df_fusion_frame[3][1:ending]] #+ [fiss_frame[3][starting:ending]]#+ [fiss_frame[3][starting:ending]]#
     
     #plot_two_axis(Rotenone_frame,Rotenone, Rotenone_frame, [  'fission-fusion ratio', 'all component'] , "number of component in Rotenone")
-    plot_multiple_line(Rotenone_frame,Rotenone, Rotenone_frame, [ 'fission' , 'fusion'] , "number of fission/fusion MDIVI 10 min")
+    plot_multiple_line(FCCP_frame,FCCP, FCCP_frame, [ 'fission' , 'fusion'] , "number of fission/fusion MDIVI 10 min")
 
     plt.boxplot([all_stat_control_all_log,all_stat_FCCP_all_log, all_stat_oligo_all_log,all_stat_Rotenone_all_log], labels=[ 'control','FCCP', 'oligo', 'Rotenone'])
 

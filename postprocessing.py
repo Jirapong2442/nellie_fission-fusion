@@ -316,13 +316,24 @@ def check_NN_volume(treeMatrix_pre,treeMatrix_post,dists,idxs,label,frame,isFusi
     corr_arr = [] # corrdinate of centriod of interested label and its neighbour
     reassigned_label_arr=[]
     i = 0
+
+    if unique_NN.shape[0] == 0:
+        return None
+    
     for n in unique_NN:
         
+        #TODO possibl;e problem is when all label in neighbour is self label!
         volume,_,_,raw_label = check_volume_value(frame[0],frame[1],n,isFusion,percent_threshold= percent) #index is not a label need to get the label from tree
         #calculate distance between centriod of frame t and t+1 of label N
         rep_len = np.abs(volume[0].shape[0] - volume[1].shape[0]) +1
         filters = ~np.isin(raw_label_filter,raw_label[0])
         dist = []
+        if ~np.any(filters): # skip the condition where all detected neighbour is itself
+            return None
+
+        if len(volume[0]) == 0 or len(volume[1]) == 0:
+            return None
+            
         min_val = np.min(distance[filters].astype(np.dtype(float)))
         if len(dist) == 0:
             dist = np.array([[min_val]])
@@ -358,7 +369,15 @@ def check_NN_volume(treeMatrix_pre,treeMatrix_post,dists,idxs,label,frame,isFusi
             rep_dist = rep_dist[np.newaxis,:]
 
             for i in range(1,rep_len):
-                index_to_repeat = np.where(distances == min_dis[-i])
+                try:
+                    index_to_repeat = np.where(distances == min_dis[-i])
+                except IndexError: 
+                    # this is the condition where label that needed to be repeated exceed the mmaximum number of smaller label 
+                    # for example pre 5 and poist 2, we can find the closet distance for only 2 label (total 4). To equalize the number
+                    # number of label, the largest distance is repeated again until component pre and post are equalized. 
+                    index_to_repeat = np.where(distances == min_dis[-i+1])
+
+
                 if volume[0].shape[0] > volume[1].shape[0]: # number of pre label is more than post label 
                     j = index_to_repeat[1][0] 
                     if i == 1:
@@ -552,6 +571,7 @@ def runframe(nearest_N,isFusion,label,interested_frame,fus_fiss_arr, percent,err
         output:
             -> unique_arr = [pre_event_volume,post_event_volume,distance between label and nearest neighbour,label]
     '''
+
     area_neighbours = nearest_N.iloc[:,0:4].to_numpy()
     mask = np.isin(area_neighbours[:,3],label)
     check_num = area_neighbours[mask].astype(float)
@@ -588,12 +608,17 @@ def runframe(nearest_N,isFusion,label,interested_frame,fus_fiss_arr, percent,err
         
         # mask use to find exact coordinate of the label since label can be repeated.
         # area of pre and post event mitochondria are unique. 
-        mask_loc_pre = np.isin(nearest_N['area_t'],pre_event_volume)
-        mask_loc_post = np.isin(nearest_N['area_t+1'],post_event_volume)
-        mask_loc = mask_loc_pre & mask_loc_post
+        #mask_loc_pre = np.isin(nearest_N['area_t'],pre_event_volume)
+        #mask_loc_post = np.isin(nearest_N['area_t+1'],post_event_volume)
+        #mask_loc = mask_loc_pre & mask_loc_post
 
-        coor_y =  nearest_N[mask_loc].iloc[:,6:7].to_numpy().transpose().astype(np.float64)
-        coor_x =  nearest_N[mask_loc].iloc[:,7:8].to_numpy().transpose().astype(np.float64)
+        #new mask: finding area that match a pair of pre and post event volume
+        mask = np.zeros(len(nearest_N), dtype=bool)
+        for pre, post in zip(pre_event_volume[0], post_event_volume[0]):
+            mask |= (nearest_N['area_t'] == pre) & (nearest_N['area_t+1'] == post)
+
+        coor_y =  nearest_N[mask].iloc[:,6:7].to_numpy().transpose().astype(np.float64)
+        coor_x =  nearest_N[mask].iloc[:,7:8].to_numpy().transpose().astype(np.float64)
 
         arr = np.concatenate((np.expand_dims(pre_event_volume,axis = 1),
                               np.expand_dims(post_event_volume,axis = 1),
@@ -679,9 +704,11 @@ def append_event(event,diff,labels,frame,isFusion,event_arr):
 # 4 *21 = 84 = 1.5 hrs
 
 if __name__ == "__main__":
-    main_dir = "/home/jirapong/jirapong/latest_network_data_summary/nellie_output/"
-    out_path = "/home/jirapong/nellie/my_script/nellie_output/simulated/new_simulation/"
-    #filename = "Rotenone"
+    main_dir = "/home/jirapong/jirapong/nellie_output/"
+    out_path = "/home/jirapong/nellie/my_script/nellie_output/simulated/multi_center/"
+    #main_dir = "/home/jirapong/jirapong/input_toxicity/nellie_output/"
+    #out_path = "/home/jirapong/nellie/my_script/nellie_output/toxicity/component_based"
+    filename = "multi_center_resized"
     diff_threshold = 0.25
     combination_threshold = 23
 
@@ -689,23 +716,23 @@ if __name__ == "__main__":
     file_path_feature = main_dir  + "ins1_" + filename +  ".ome-ch0-features_components.csv"
     seg_path = main_dir + "ins1_" + filename  + ".ome-ch0-im_instance_label.ome.tif"
     reassigned_path = main_dir+ "ins1_" + filename  + ".ome-ch0-im_obj_label_reassigned.ome.tif"
-    
-    
-    file_path_feature = main_dir  + "time_ins_" + filename +  ".ome-ch0-features_components.csv"
-    seg_path = main_dir + "time_ins_" + filename  + ".ome-ch0-im_instance_label.ome.tif"
-    reassigned_path = main_dir+ "time_ins_" + filename  + ".ome-ch0-im_obj_label_reassigned.ome.tif"
     '''
-    fission_path_csv = "branch_binary.ome-TYX-T1p0_Y0p2_X0p2-ch0-t0_to_100-features_organelles.csv"
+    
+    file_path_feature = main_dir  + filename +  ".ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_100-features_organelles.csv"
+    seg_path = main_dir   + "/nellie_necessities/" + filename+ ".ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_100-im_instance_label.ome.tif"
+    reassigned_path = main_dir + "/nellie_necessities/"  + filename+ ".ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_100-ch0-im_obj_label_reassigned.ome.tif"
+    
+    #fission_path_csv = "balance_final.ome-TYX-T1p0_Y0p1_X0p1-ch0-t0_to_100-features_organelles.csv"
     #fusion_path_csv = "hi_fu_thick.ome-TYX-T1p0_Y0p1_X0p1-ch0-t50_to_100-features_organelles.csv"
-    fission_path_image = "branch_binary.ome-TYX-T1p0_Y0p2_X0p2-ch0-t0_to_100-im_instance_label.ome.tif"
+    #fission_path_image = "balance_final.ome-TYX-T1p0_Y0p1_X0p1-ch0-t0_to_100-im_instance_label.ome.tif"
     #fusion_path_image = "hi_fu_thick.ome-TYX-T1p0_Y0p1_X0p1-ch0-t50_to_100-im_instance_label.ome.tif"
 
-    file_path_feature = main_dir  + fission_path_csv # "hi_fu_thick.ome-TYX-T1p0_Y0p1_X0p1-ch0-t50_to_100-features_organelles.csv"
-    seg_path = main_dir + "nellie_necessities/" + fission_path_image #hi_fi_thick.ome-TYX-T1p0_Y0p1_X0p1-ch0-t50_to_100-im_instance_label.ome.tif
+    #file_path_feature = main_dir  + fission_path_csv # "hi_fu_thick.ome-TYX-T1p0_Y0p1_X0p1-ch0-t50_to_100-features_organelles.csv"
+    #seg_path = main_dir + "nellie_necessities/" + fission_path_image #hi_fi_thick.ome-TYX-T1p0_Y0p1_X0p1-ch0-t50_to_100-im_instance_label.ome.tif
     #hi_fu_thick.ome-TYX-T1p0_Y0p1_X0p1-ch0-t50_to_100-im_instance_label.ome.tif"
     
 
-    output_name = "simulated_normal"
+    output_name = "rotonone_test"
 
     nellie_df = pd.read_csv(file_path_feature)
     labeled_im = tifffile.imread(seg_path)
@@ -771,7 +798,7 @@ if __name__ == "__main__":
                     dists_all.append(dists)
                     idxs_all.append(idxs)
 
-            if frame < max_frame_num-2 : #and current_label_area > accepted_area: # uncomment this for actual mito image
+            if frame < max_frame_num-2 and current_label_area > accepted_area: # TODO uncomment this for actual mito image
 
                 volume,significance,diff,_ = check_volume_value(frame,frame +1 ,labels,isFusion = True, percent_threshold= diff_threshold )
                 interested_frame = np.array([frame,frame+1])
@@ -794,7 +821,7 @@ if __name__ == "__main__":
 
                 isAreaNotZero = np.all([np.all(subarray) for subarray in volume])
                 
-                if significance and isAreaNotZero:
+                if significance and isAreaNotZero and neigh is not None:
                     event_arr  = runframe(neigh, isFusion_condition,labels,interested_frame,final_fusion_volume, percent= diff_threshold,error=combination_threshold)
 
                     if event_arr is not None and not isFusion_condition : 
@@ -819,8 +846,6 @@ if __name__ == "__main__":
 
     column_names_event = ["Volume_pre", "Volume_post", "Distance","Nearest_Label","y_corr", "x_corr", "Volume_diff","isFusion" ,"Frame" , "Label"]
     possible_event_all = pd.DataFrame(event_all, columns=column_names_event)
-
-
 
     try:
         label_NN_all.to_csv(os.path.join(out_path,f'{output_name}_neighbour.csv'), index=False) 

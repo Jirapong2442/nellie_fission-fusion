@@ -62,31 +62,6 @@ def plot_labels(csvPath,segmented_path,reassigned_path,contour_label):
     viewer.add_points(centroids, text = labels, size =0.5, name = "label number")
     napari.run()
 
-    '''
-        # Get contours for specific labels (e.g., labels 1, 2, and 3)
-        label_ids_to_highlight = [321]
-        all_contours = []
-        for label_id in label_ids_to_highlight:
-            contour = get_label_contour(labeled_im_frame, label_id)
-            all_contours.extend(contour)
-    '''
-        
-    '''
-    if contour_points:
-        contour_layer = viewer.add_shapes(
-            np.transpose(contour_points),
-            shape_type='polygon',
-            edge_width=2,
-            edge_color='yellow',
-            face_color='transparent',
-            name=f'Contour for Label {contour_label}'
-        )
-    else:
-        print(f"No contour found for label {contour_label}")
-    '''
-    
-
-
 #check extremas
 def find_extrema(binary_image):
     # Ensure the image is binary
@@ -129,7 +104,7 @@ def find_extrema(binary_image):
 
 main_dir = "D:/Internship/NTU/nellie_output/nellie_output/simulation"
 #test the result from iminstance
-seg_path = main_dir + "/branch_binary.ome-TYX-T1p0_Y0p2_X0p2-ch0-t0_to_100-im_instance_label.ome.tif"
+seg_path = main_dir + "/branch_binary.ome-TYX-T1p0_Y0p2_X0p2-ch0-t0_to_100-im_instance_label.ome.tif" #don
 reassigned_path = main_dir +"/branch_binary.ome-TYX-T1p0_Y0p2_X0p2-ch0-t0_to_100-im_obj_label_reassigned.ome.tif"
 CSV_file_path = main_dir + "/branch_binary.ome-TYX-T1p0_Y0p2_X0p2-ch0-t0_to_100-features_organelles.csv"
 
