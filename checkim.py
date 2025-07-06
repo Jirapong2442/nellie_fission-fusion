@@ -104,9 +104,9 @@ def find_extrema(binary_image):
 
 main_dir = "D:/Internship/NTU/nellie_output/nellie_output/simulation"
 #test the result from iminstance
-seg_path = main_dir + "/branch_binary.ome-TYX-T1p0_Y0p2_X0p2-ch0-t0_to_100-im_instance_label.ome.tif" #don
-reassigned_path = main_dir +"/branch_binary.ome-TYX-T1p0_Y0p2_X0p2-ch0-t0_to_100-im_obj_label_reassigned.ome.tif"
-CSV_file_path = main_dir + "/branch_binary.ome-TYX-T1p0_Y0p2_X0p2-ch0-t0_to_100-features_organelles.csv"
+seg_path = main_dir + "/multi_center_resized2.ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_100-im_instance_label.ome.tif" #don
+reassigned_path = main_dir +"/multi_center_resized2.ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_100-im_obj_label_reassigned.ome.tif"
+CSV_file_path = main_dir + "/multi_center_resized2.ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_100-features_organelles.csv"
 
 # Usage
 labeled_im = tifffile.imread(seg_path)

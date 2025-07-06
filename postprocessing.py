@@ -372,10 +372,11 @@ def check_NN_volume(treeMatrix_pre,treeMatrix_post,dists,idxs,label,frame,isFusi
                 try:
                     index_to_repeat = np.where(distances == min_dis[-i])
                 except IndexError: 
+                    # test: colume 6,2 = 
                     # this is the condition where label that needed to be repeated exceed the mmaximum number of smaller label 
                     # for example pre 5 and poist 2, we can find the closet distance for only 2 label (total 4). To equalize the number
                     # number of label, the largest distance is repeated again until component pre and post are equalized. 
-                    index_to_repeat = np.where(distances == min_dis[-i+1])
+                    index_to_repeat = np.where(distances == min_dis[-1])#np.where(distances == min_dis[-i+1])
 
 
                 if volume[0].shape[0] > volume[1].shape[0]: # number of pre label is more than post label 
@@ -476,6 +477,7 @@ def check_NN_volume(treeMatrix_pre,treeMatrix_post,dists,idxs,label,frame,isFusi
     
 def find_combinations(arr,error_percentage,start=1,):
     '''
+    #TODO only find combination of 1 component per frame, but some label might have multiple component
     find a combination of first row that could potentially sum up to the target value in second row
     return value pair data of
         1. a possible pair data of data_column to the specific_cell_value (result data)
@@ -488,10 +490,15 @@ def find_combinations(arr,error_percentage,start=1,):
     post_event_arr = []
     result_label = []
     result_dists = []
+    y_arr = []
+    x_arr = []
+
     data_col = arr[:, 0]
     target_col = arr[:, 1]
     dists_col = arr[:,2]
     label_col = arr[:,3]
+    y = arr[:,6]
+    x = arr[:,7]
 
     target_value = arr[0, 1]
     specific_cell_value = arr[0, 0]
@@ -500,7 +507,9 @@ def find_combinations(arr,error_percentage,start=1,):
 
     upper_boundary, lower_boundary = error_percentage*target_value, -error_percentage*target_value
 
-    def backtrack(data_list,target_list,label_list,dist_list, start, remaining,sum,lower_bound,upper_bound):
+    def backtrack(data_list,target_list,label_list,dist_list
+                  ,y_list,x_list, #add here
+                  start, remaining,sum,lower_bound,upper_bound):
 
         if (remaining/ (sum/2)) <= error_percentage and len(data_list) > 0 :
         #remaining >= lower_bound and remaining <= upper_bound :
@@ -509,6 +518,8 @@ def find_combinations(arr,error_percentage,start=1,):
             post_event_arr.append(target_list[:])
             result_label.append(label_list[:])
             result_dists.append(dist_list[:])
+            y_arr.append(y_list[:])
+            x_arr.append(x_list[:])
             return
         
         for i in range(start, len(data_col)):
@@ -518,6 +529,9 @@ def find_combinations(arr,error_percentage,start=1,):
                 target_list.append(target_col[i])
                 label_list.append(label_col[i])
                 dist_list.append(dists_col[i])
+                
+                y_list.append(y[i])
+                x_list.append(x[i])
                 '''
                 #Above condition
                 diff = (remaining - data_col[i] + target_col[i])/ (sum_all_vol/2)
@@ -528,25 +542,36 @@ def find_combinations(arr,error_percentage,start=1,):
                 sum_all_vol + data_col[i] + target_col[i]
                 '''
 
-                backtrack(data_list,target_list,label_list,dist_list, i + 1, remaining - (data_col[i]-target_col[i]),
+                backtrack(data_list,target_list,label_list,dist_list,
+                          y_list,x_list, 
+                          i + 1, remaining - (data_col[i]-target_col[i]),
                         sum + data_col[i] + target_col[i],lower_boundary, upper_boundary)
+                
                 data_list.pop()
                 target_list.pop()
                 label_list.pop()
                 dist_list.pop()
+                y_list.pop()
+                x_list.pop()
     #when the lable suddenly appear or disappear = specific_cell_volume = 0 -> break the combination
 
     if specific_cell_value == 0: 
         return np.array([])
 
     else:
-        backtrack([],[],[], [],start, remaining_target,sum_all_vol ,lower_boundary,upper_boundary)
+        backtrack([],[],[],[],[], [],start, remaining_target,sum_all_vol ,lower_boundary,upper_boundary)
         volume_pre = np.array(pre_event_arr,dtype=object)
         volume_post = np.array(post_event_arr,dtype=object)
         label = np.array(result_label,dtype=object)
         dist = np.array(result_dists,dtype=object)
+        y = np.array(y_arr,dtype=object)
+        x = np.array(x_arr,dtype=object)
 
-    result = np.transpose(np.concatenate((volume_pre,volume_post,dist,label)))
+    if len(pre_event_arr) == 0:
+        return np.array([])
+
+    #TODO change here #result = np.transpose(np.concatenate((volume_pre,volume_post,dist,label,raw_label_t,raw_label_t1,y,x),axis=0))
+    result = np.concatenate((volume_pre,volume_post,dist,label,y,x),axis=1)
     return result
     
 def gaussian_distance_weight(distance,sigma = 1.0):
@@ -560,6 +585,10 @@ def exponential_decay(distance,gamma):
     distance = distance.astype(float)
     return np.exp(-gamma*distance)
 
+def remove_duplicate(arr):
+    # Remove rows with duplicate values in columns 0,1,2,3
+    return arr.drop_duplicates(subset=arr.columns[:4], keep='first').reset_index(drop=True)
+
 def runframe(nearest_N,isFusion,label,interested_frame,fus_fiss_arr, percent,error): 
 #runframe(treeMatrix_pre, treeMatrix_post,dists_tree,idxs,isFusion,label,interested_frame,fus_fiss_arr, percent,error):
 
@@ -572,7 +601,7 @@ def runframe(nearest_N,isFusion,label,interested_frame,fus_fiss_arr, percent,err
             -> unique_arr = [pre_event_volume,post_event_volume,distance between label and nearest neighbour,label]
     '''
 
-    area_neighbours = nearest_N.iloc[:,0:4].to_numpy()
+    area_neighbours =  nearest_N.to_numpy()#TODO #nearest_N.iloc[:,0:4].to_numpy()
     mask = np.isin(area_neighbours[:,3],label)
     check_num = area_neighbours[mask].astype(float)
     comp_before = np.unique(check_num[:,0],axis = 0).shape[0]
@@ -581,55 +610,14 @@ def runframe(nearest_N,isFusion,label,interested_frame,fus_fiss_arr, percent,err
     if comp_before == comp_after:
 
         combinations = find_combinations(area_neighbours, error_percentage = error)
-
+        combinations = combinations.astype(np.float64) 
+        
         if combinations.size == 0:
             return None
+    
+        unique_arr = np.unique(combinations,axis=0) # was arr
 
-        try:
-            if combinations.shape[1] != 0:
-                section_index = int((combinations.shape[1])/4)
-
-                pre_event_volume = combinations[:,:section_index]
-                post_event_volume = combinations[:,section_index:section_index*2]
-                dists = combinations[:,2*section_index:3*section_index]
-                label_arr= combinations[:,3*section_index:4*section_index]
-                pre_event_volume = np.array(pre_event_volume,dtype=np.float64)
-                post_event_volume = np.array(post_event_volume,dtype=np.float64)
-                dists = np.array(dists,dtype=np.float64)
-                label_arr = np.array(label_arr,dtype=np.float64)
-            
-        except: #never execute here in simulation code. 
-            combinations = np.concatenate(combinations)
-            section_index = int(len(combinations)/4)
-            pre_event_volume =  np.concatenate(np.expand_dims(combinations[:section_index],axis=0))
-            post_event_volume = np.concatenate(np.expand_dims(combinations[section_index:2*section_index],axis=0))
-            dists = np.concatenate(np.expand_dims(combinations[2*section_index:3*section_index],axis=0))
-            label_arr = np.concatenate(np.expand_dims(combinations[3*section_index:4*section_index],axis=0))
-        
-        # mask use to find exact coordinate of the label since label can be repeated.
-        # area of pre and post event mitochondria are unique. 
-        #mask_loc_pre = np.isin(nearest_N['area_t'],pre_event_volume)
-        #mask_loc_post = np.isin(nearest_N['area_t+1'],post_event_volume)
-        #mask_loc = mask_loc_pre & mask_loc_post
-
-        #new mask: finding area that match a pair of pre and post event volume
-        mask = np.zeros(len(nearest_N), dtype=bool)
-        for pre, post in zip(pre_event_volume[0], post_event_volume[0]):
-            mask |= (nearest_N['area_t'] == pre) & (nearest_N['area_t+1'] == post)
-
-        coor_y =  nearest_N[mask].iloc[:,6:7].to_numpy().transpose().astype(np.float64)
-        coor_x =  nearest_N[mask].iloc[:,7:8].to_numpy().transpose().astype(np.float64)
-
-        arr = np.concatenate((np.expand_dims(pre_event_volume,axis = 1),
-                              np.expand_dims(post_event_volume,axis = 1),
-                              np.expand_dims(dists,axis = 1),
-                              np.expand_dims(label_arr,axis = 1), 
-                              np.expand_dims(coor_x,axis = 1),
-                              np.expand_dims(coor_y,axis = 1)), 
-                              axis = 1,dtype=np.float64)
-        unique_arr = np.unique(arr,axis=0)
-
-        if unique_arr.ndim == 3:
+        if unique_arr.ndim == 3: #TODO if this condition is not used after querying all label, remove it
             unique_arr = unique_arr.transpose(1,0,2).reshape(6,-1).T
 
         if ~isFusion:
@@ -652,15 +640,18 @@ def runframe(nearest_N,isFusion,label,interested_frame,fus_fiss_arr, percent,err
 
     else:
         mask = np.isin(nearest_N['reassigned_label'],label)
-        _, idx = np.unique(nearest_N[mask]['x_corr'].to_numpy().astype(np.float64), return_index=True)
-        coor_x = nearest_N[mask]['x_corr'].to_numpy().astype(np.float64)[np.sort(idx)]
 
-        _, idx = np.unique(nearest_N[mask]['y_corr'].to_numpy().astype(np.float64), return_index=True)
-        coor_y = nearest_N[mask]['y_corr'].to_numpy().astype(np.float64)[np.sort(idx)]
+        coor_all = np.unique(nearest_N[mask].iloc[:,-2:].to_numpy().astype(np.float64), axis =0)
 
-        coor_x = np.expand_dims(coor_x, axis =1 )
-        coor_y = np.expand_dims(coor_y, axis = 1)
-        coor_all = np.concatenate((coor_x,coor_y),axis = 1)
+        #_, idx = np.unique(nearest_N[mask]['x_corr'].to_numpy().astype(np.float64), return_index=True)
+        #coor_x = nearest_N[mask]['x_corr'].to_numpy().astype(np.float64)[np.sort(idx)]
+
+        #_, idx = np.unique(nearest_N[mask]['y_corr'].to_numpy().astype(np.float64), return_index=True)
+        #coor_y = nearest_N[mask]['y_corr'].to_numpy().astype(np.float64)[np.sort(idx)]
+
+        #coor_x = np.expand_dims(coor_x, axis =1 )
+        #coor_y = np.expand_dims(coor_y, axis = 1)
+        #coor_all = np.concatenate((coor_x,coor_y),axis = 1)
 
         unique_arr = np.array([np.append(np.zeros(4), arr) for arr in coor_all])
 
@@ -708,19 +699,27 @@ if __name__ == "__main__":
     out_path = "/home/jirapong/nellie/my_script/nellie_output/simulated/multi_center/"
     #main_dir = "/home/jirapong/jirapong/input_toxicity/nellie_output/"
     #out_path = "/home/jirapong/nellie/my_script/nellie_output/toxicity/component_based"
-    filename = "multi_center_resized"
+    filename = "low_stride"
+    output_name = filename
     diff_threshold = 0.25
     combination_threshold = 23
 
+
     '''
+    low_stride.ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_500
+    low_stride.ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_500-features_organelles.csv
+
+    '/home/jirapong/jirapong/nellie_output/low_stride.ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_500-features_organelles.csv'
+    '/home/jirapong/jirapong/nellie_output/low_stride.TYX-T1p0_Y0p15_X0p15-ch0-t0_to_500-features_organelles.csv'
+
     file_path_feature = main_dir  + "ins1_" + filename +  ".ome-ch0-features_components.csv"
     seg_path = main_dir + "ins1_" + filename  + ".ome-ch0-im_instance_label.ome.tif"
     reassigned_path = main_dir+ "ins1_" + filename  + ".ome-ch0-im_obj_label_reassigned.ome.tif"
     '''
     
-    file_path_feature = main_dir  + filename +  ".ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_100-features_organelles.csv"
-    seg_path = main_dir   + "/nellie_necessities/" + filename+ ".ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_100-im_instance_label.ome.tif"
-    reassigned_path = main_dir + "/nellie_necessities/"  + filename+ ".ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_100-ch0-im_obj_label_reassigned.ome.tif"
+    file_path_feature = main_dir  + filename +  ".ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_500-features_organelles.csv"
+    seg_path = main_dir   + "/nellie_necessities/" + filename+ ".ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_500-im_instance_label.ome.tif"
+    reassigned_path = main_dir + "/nellie_necessities/"  + filename+ ".ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_500-im_obj_label_reassigned.ome.tif"
     
     #fission_path_csv = "balance_final.ome-TYX-T1p0_Y0p1_X0p1-ch0-t0_to_100-features_organelles.csv"
     #fusion_path_csv = "hi_fu_thick.ome-TYX-T1p0_Y0p1_X0p1-ch0-t50_to_100-features_organelles.csv"
@@ -732,7 +731,7 @@ if __name__ == "__main__":
     #hi_fu_thick.ome-TYX-T1p0_Y0p1_X0p1-ch0-t50_to_100-im_instance_label.ome.tif"
     
 
-    output_name = "rotonone_test"
+    
 
     nellie_df = pd.read_csv(file_path_feature)
     labeled_im = tifffile.imread(seg_path)
@@ -831,6 +830,7 @@ if __name__ == "__main__":
                             
                     if event_arr is not None and event_arr.size >0 :
                         event_all = append_event(event_arr,diff, labels,frame,isFusion_condition,event_all)
+                        print(event_all)
 
     column_names_Neighbour = ["Volume_pre", "Volume_post", "Distance","reassigned_label","raw_label_t","raw_label_t+1",
                               "y_coor","x_coor","isFusion" ,"Frame" , "Label"]
