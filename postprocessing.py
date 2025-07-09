@@ -599,6 +599,7 @@ def runframe(nearest_N,isFusion,label,interested_frame,fus_fiss_arr, percent,err
 
         output:
             -> unique_arr = [pre_event_volume,post_event_volume,distance between label and nearest neighbour,label]
+            -> neighbors and coordinate record after the event for fission and before the event for fusion
     '''
 
     area_neighbours =  nearest_N.to_numpy()#TODO #nearest_N.iloc[:,0:4].to_numpy()
@@ -620,7 +621,8 @@ def runframe(nearest_N,isFusion,label,interested_frame,fus_fiss_arr, percent,err
         if unique_arr.ndim == 3: #TODO if this condition is not used after querying all label, remove it
             unique_arr = unique_arr.transpose(1,0,2).reshape(6,-1).T
 
-        if ~isFusion:
+        if ~isFusion: # swap volume pre and post after finish combination calculation
+            #fission volume decrease so we swpa it, now we swap back. 
             unique_arr[:,[0,1]] = unique_arr[:,[1,0]]
             
         weight2 = inverse_distance_weight(unique_arr[:,2],2)
