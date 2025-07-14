@@ -599,66 +599,52 @@ def runframe(nearest_N,isFusion,label,interested_frame,fus_fiss_arr, percent,err
 
         output:
             -> unique_arr = [pre_event_volume,post_event_volume,distance between label and nearest neighbour,label]
-            -> neighbors and coordinate record after the event for fission and before the event for fusion
     '''
 
     area_neighbours =  nearest_N.to_numpy()#TODO #nearest_N.iloc[:,0:4].to_numpy()
     mask = np.isin(area_neighbours[:,3],label)
     check_num = area_neighbours[mask].astype(float)
-    comp_before = np.unique(check_num[:,0],axis = 0).shape[0]
-    comp_after = np.unique(check_num[:,1],axis = 0).shape[0]
+    comb_before = np.unique(check_num[:,0],axis = 0).shape[0]
+    comb_after = np.unique(check_num[:,1],axis = 0).shape[0]
 
-    if comp_before == comp_after:
+    #if comb_before == comb_after:
 
-        combinations = find_combinations(area_neighbours, error_percentage = error)
-        combinations = combinations.astype(np.float64) 
-        
-        if combinations.size == 0:
-            return None
+    combinations = find_combinations(area_neighbours, error_percentage = error)
+    combinations = combinations.astype(np.float64) 
     
-        unique_arr = np.unique(combinations,axis=0) # was arr
+    if combinations.size == 0:
+        return None
+    
+    unique_arr = np.unique(combinations,axis=0) # was arr
 
-        if unique_arr.ndim == 3: #TODO if this condition is not used after querying all label, remove it
-            unique_arr = unique_arr.transpose(1,0,2).reshape(6,-1).T
+    if unique_arr.ndim == 3: #TODO if this condition is not used after querying all label, remove it
+        unique_arr = unique_arr.transpose(1,0,2).reshape(6,-1).T
 
-        if ~isFusion: # swap volume pre and post after finish combination calculation
-            #fission volume decrease so we swpa it, now we swap back. 
-            unique_arr[:,[0,1]] = unique_arr[:,[1,0]]
-            
-        weight2 = inverse_distance_weight(unique_arr[:,2],2)
-        #weight = gaussian_distance_weight(unique_arr[:,0])
-        #weight3 = exponential_decay(unique_arr[:,0],1)
-        all_weight = np.sum(weight2)
-        normalized_weight = weight2/all_weight
-        event_prob = np.max(normalized_weight)
+    if ~isFusion:
+        unique_arr[:,[0,1]] = unique_arr[:,[1,0]]
+        
+    weight2 = inverse_distance_weight(unique_arr[:,2],2)
+    #weight = gaussian_distance_weight(unique_arr[:,0])
+    #weight3 = exponential_decay(unique_arr[:,0],1)
+    all_weight = np.sum(weight2)
+    normalized_weight = weight2/all_weight
+    event_prob = np.max(normalized_weight)
 
-        #prob == 1 when any of the two closet neighbor ==0
-        if np.any(unique_arr[:2,1] == 0):
-            fus_fiss_arr[label-1][interested_frame[1]] += 1
-        else:
-            fus_fiss_arr[label-1][interested_frame[1]] += event_prob
-
-        return unique_arr
-
+    #prob == 1 when any of the two closet neighbor ==0
+    if np.any(unique_arr[:2,1] == 0):
+        fus_fiss_arr[label-1][interested_frame[1]] += 1
     else:
-        mask = np.isin(nearest_N['reassigned_label'],label)
+        fus_fiss_arr[label-1][interested_frame[1]] += event_prob
 
-        coor_all = np.unique(nearest_N[mask].iloc[:,-2:].to_numpy().astype(np.float64), axis =0)
+    return unique_arr
 
-        #_, idx = np.unique(nearest_N[mask]['x_corr'].to_numpy().astype(np.float64), return_index=True)
-        #coor_x = nearest_N[mask]['x_corr'].to_numpy().astype(np.float64)[np.sort(idx)]
+    #else:#TODO delete here. 
+     #   mask = np.isin(nearest_N['reassigned_label'],label)
+      #  coor_all = np.unique(nearest_N[mask].iloc[:,-2:].to_numpy().astype(np.float64), axis =0)
+       # unique_arr = np.array([np.append(np.zeros(4), arr) for arr in coor_all])
 
-        #_, idx = np.unique(nearest_N[mask]['y_corr'].to_numpy().astype(np.float64), return_index=True)
-        #coor_y = nearest_N[mask]['y_corr'].to_numpy().astype(np.float64)[np.sort(idx)]
-
-        #coor_x = np.expand_dims(coor_x, axis =1 )
-        #coor_y = np.expand_dims(coor_y, axis = 1)
-        #coor_all = np.concatenate((coor_x,coor_y),axis = 1)
-
-        unique_arr = np.array([np.append(np.zeros(4), arr) for arr in coor_all])
-
-        fus_fiss_arr[label-1][interested_frame[1]] += np.abs(comp_before-comp_after)
-        return unique_arr
+        #fus_fiss_arr[label-1][interested_frame[1]] += np.abs(comb_before-comb_after)
+       # return unique_arr
 
 def append_NN(NN,labels,frame,neighbor_arr,isFusion):
     label_NN = np.full(shape=(NN.shape[0],1) , fill_value = labels)
@@ -676,12 +662,12 @@ def append_NN(NN,labels,frame,neighbor_arr,isFusion):
         neighbor_arr = np.concatenate((neighbor_arr,NN_volume),axis =0) 
     return neighbor_arr
 
-def append_event(event,diff,labels,frame,isFusion,event_arr):
+def append_event(event,diff,labels,frame,isFusion,event_arr, isSelfEvent):
     fusion_arr = np.full(shape=(event.shape[0],1) , fill_value = isFusion)
     label_NN = np.full(shape=(event.shape[0],1) , fill_value = labels)
     diff = np.full(shape=(event.shape[0],1) , fill_value = diff)
 
-    if isFusion:
+    if isSelfEvent or isFusion:
         frame_NN = np.full(shape=(event.shape[0],1) , fill_value = frame)
     else:
         frame_NN = np.full(shape=(event.shape[0],1) , fill_value = frame+1)
@@ -703,7 +689,7 @@ if __name__ == "__main__":
     #out_path = "/home/jirapong/nellie/my_script/nellie_output/toxicity/component_based"
     filename = "low_stride"
     output_name = filename
-    diff_threshold = 0.25
+    diff_threshold = 2 #0.25
     combination_threshold = 23
 
 
@@ -731,9 +717,6 @@ if __name__ == "__main__":
     #file_path_feature = main_dir  + fission_path_csv # "hi_fu_thick.ome-TYX-T1p0_Y0p1_X0p1-ch0-t50_to_100-features_organelles.csv"
     #seg_path = main_dir + "nellie_necessities/" + fission_path_image #hi_fi_thick.ome-TYX-T1p0_Y0p1_X0p1-ch0-t50_to_100-im_instance_label.ome.tif
     #hi_fu_thick.ome-TYX-T1p0_Y0p1_X0p1-ch0-t50_to_100-im_instance_label.ome.tif"
-    
-
-    
 
     nellie_df = pd.read_csv(file_path_feature)
     labeled_im = tifffile.imread(seg_path)
@@ -766,6 +749,9 @@ if __name__ == "__main__":
     volume_all = []
     sig_all = []
     label_all = []
+    previous_label_count = 0
+    first_counter = True
+    isSelfevent = False
     for labels in tqdm(range(1,first_frame_label)):
         final_fission_self,final_fusion_self = check_mito_number(nellie_df, labels,final_fission_self,final_fusion_self)
 
@@ -794,58 +780,82 @@ if __name__ == "__main__":
                     idxs_all.append(idxs)
                     idxs_all.append(idxs_post)
                 elif frame < max_frame_num - 2:
+                    # try query 1 frame ahead for potential fission event which we need to check neighbour of the next frame
                     treeMatrix,dists,idxs = nearest_neighbour(labeled_im,nellie_df,frame=frame +1)
                     treeMatrix_all.append(treeMatrix)
                     dists_all.append(dists)
                     idxs_all.append(idxs)
 
-            if frame < max_frame_num-2 and current_label_area > accepted_area: # TODO uncomment this for actual mito image
+            if frame < max_frame_num-2: #and current_label_area > accepted_area: # TODO uncomment this for actual mito image
+                # check tree of current frame 
+                interested_tree = treeMatrix_all[frame] 
+                mask_tree= np.isin(interested_tree[:,2],labels)
+                current_label_count= interested_tree[mask_tree].shape[0]
 
-                volume,significance,diff,_ = check_volume_value(frame,frame +1 ,labels,isFusion = True, percent_threshold= diff_threshold )
-                interested_frame = np.array([frame,frame+1])
-                volume_all.append(volume)
-                frame_all.append(frame)
-                label_all.append(labels)
-                sig_all.append(significance)
+                if first_counter: 
+                    previous_label_count = current_label_count
+                    significance = False
+                    event_arr= None
+                    first_counter = False
 
-                # to output all neighbour. we might skip neighbor output if it is inside the area and combination criterion.
-                if diff >= 0: 
-                    isFusion_condition = True
-                    neigh = check_NN_volume(treeMatrix_all[frame], treeMatrix_all[frame +1],dists_all[frame],idxs_all[frame],
-                                            label= labels, frame = interested_frame, isFusion= isFusion_condition, percent = diff_threshold)
-                elif diff < 0:
-                    isFusion_condition = False
-                    neigh = check_NN_volume(treeMatrix_all[frame], treeMatrix_all[frame +1],dists_all[frame+1],idxs_all[frame+1],
-                                            label= labels, frame = interested_frame, isFusion= isFusion_condition, percent = diff_threshold)
-                if neigh is not None: 
-                    NN_all = append_NN(neigh,labels,frame,NN_all,isFusion = True)
+                elif current_label_count != previous_label_count: # self fusion/fission condition
+                    coords = interested_tree[mask_tree][:,0:2]
+                    isSelfevent = True
+                    neigh = 1
+                    arr = np.array([np.append(np.zeros(4), arr) for arr in coords])
 
-                isAreaNotZero = np.all([np.all(subarray) for subarray in volume])
-                
-                if significance and isAreaNotZero and neigh is not None:
-                    event_arr  = runframe(neigh, isFusion_condition,labels,interested_frame,final_fusion_volume, percent= diff_threshold,error=combination_threshold)
+                    if current_label_count > previous_label_count:
+                        isFusion_condition = 0
+                        final_fission_volume[labels-1][interested_frame[1]] += np.abs(previous_label_count-current_label_count)
+                    else: 
+                        isFusion_condition = 1
+                        final_fusion_volume[labels-1][interested_frame[1]] += np.abs(previous_label_count-current_label_count)
 
-                    if event_arr is not None and not isFusion_condition : 
-                        # combination of event calculate only increaase in area. So the combination function swap area column (area at t+1, area at t) to make it as if area is increasing
-                        # after combination is calculate, the column is reverse (area at t, area at t+1)
-                        event_arr[:,[0,1]] = event_arr[:,[1,0]]
+                    event_arr = arr
+                    diff = 0
+                    previous_label_count = current_label_count
+
+                else: # not self event
+                    previous_label_count = current_label_count
+                    volume,significance,diff,_ = check_volume_value(frame,frame +1 ,labels,isFusion = True, percent_threshold= diff_threshold )
+                    interested_frame = np.array([frame,frame+1])
+                    volume_all.append(volume)
+                    frame_all.append(frame)
+                    label_all.append(labels)
+                    sig_all.append(significance)
+
+                    isAreaNotZero = np.all([np.all(subarray) for subarray in volume])
+
+                    # to output all neighbour. we might skip neighbor output if it is inside the area and combination criterion.
+                    if diff >= 0: 
+                        isFusion_condition = True
+                        neigh = check_NN_volume(treeMatrix_all[frame], treeMatrix_all[frame +1],dists_all[frame],idxs_all[frame],
+                                                label= labels, frame = interested_frame, isFusion= isFusion_condition, percent = diff_threshold)
+                        if significance and isAreaNotZero and neigh is not None:
+                            event_arr  = runframe(neigh, isFusion_condition,labels,interested_frame,final_fusion_volume, percent= diff_threshold,error=combination_threshold)
+                            NN_all = append_NN(neigh,labels,frame,NN_all,isFusion = True)
+                            if event_arr is not None: 
+                                event_arr[:,[0,1]] = event_arr[:,[1,0]]
+
+                    elif diff < 0:
+                        isFusion_condition = False
+                        neigh = check_NN_volume(treeMatrix_all[frame], treeMatrix_all[frame +1],dists_all[frame+1],idxs_all[frame+1],
+                                                label= labels, frame = interested_frame, isFusion= isFusion_condition, percent = diff_threshold)
+                        if significance and isAreaNotZero and neigh is not None:
+                            event_arr  = runframe(neigh, isFusion_condition,labels,interested_frame,final_fission_volume, percent= diff_threshold,error=combination_threshold)
+                            NN_all = append_NN(neigh,labels,frame,NN_all,isFusion = True)
+                    
                             
-                    if event_arr is not None and event_arr.size >0 :
-                        event_all = append_event(event_arr,diff, labels,frame,isFusion_condition,event_all)
-                        print(event_all)
-
+                if event_arr is not None and event_arr.size >0 :
+                    # add in append event if fission/fusion from self event no need to increase the farme
+                    event_all = append_event(event_arr,diff, labels,frame,isFusion_condition,event_all, isSelfevent)
+                    isSelfevent = False
+                    event_arr= None
+                    
     column_names_Neighbour = ["Volume_pre", "Volume_post", "Distance","reassigned_label","raw_label_t","raw_label_t+1",
                               "y_coor","x_coor","isFusion" ,"Frame" , "Label"]
     label_NN_all = pd.DataFrame(NN_all, columns=column_names_Neighbour)
-    #all_volume =  np.concatenate((np.array(volume_all),
-                                #np.expand_dims(np.array(sig_all),axis = 1),
-                               # np.expand_dims(np.array(label_all),axis = 1),
-                               # np.expand_dims(np.array(frame_all),axis = 1)),
-                                 #   axis = 1 )
-
-    #column_volume_check = ["Volume_pre", "Volume_post","Significance","label", "Frame"]
-    #volume_check_csv = pd.DataFrame(all_volume, columns=column_volume_check)
-
+    
     column_names_event = ["Volume_pre", "Volume_post", "Distance","Nearest_Label","y_corr", "x_corr", "Volume_diff","isFusion" ,"Frame" , "Label"]
     possible_event_all = pd.DataFrame(event_all, columns=column_names_event)
 
