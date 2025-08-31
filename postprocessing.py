@@ -687,11 +687,10 @@ if __name__ == "__main__":
     out_path = "/home/jirapong/nellie/my_script/nellie_output/simulated/multi_center/"
     #main_dir = "/home/jirapong/jirapong/input_toxicity/nellie_output/"
     #out_path = "/home/jirapong/nellie/my_script/nellie_output/toxicity/component_based"
-    filename = "low_stride"
+    filename = "pdb"
     output_name = filename
     diff_threshold = 2 #0.25
     combination_threshold = 23
-
 
     '''
     low_stride.ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_500
@@ -705,9 +704,9 @@ if __name__ == "__main__":
     reassigned_path = main_dir+ "ins1_" + filename  + ".ome-ch0-im_obj_label_reassigned.ome.tif"
     '''
     
-    file_path_feature = main_dir  + filename +  ".ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_500-features_organelles.csv"
-    seg_path = main_dir   + "/nellie_necessities/" + filename+ ".ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_500-im_instance_label.ome.tif"
-    reassigned_path = main_dir + "/nellie_necessities/"  + filename+ ".ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_500-im_obj_label_reassigned.ome.tif"
+    file_path_feature = main_dir  + filename +  ".ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_299-features_organelles.csv"
+    seg_path = main_dir   + "/nellie_necessities/" + filename+ ".ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_299-im_instance_label.ome.tif"
+    reassigned_path = main_dir + "/nellie_necessities/"  + filename+ ".ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_299-im_obj_label_reassigned.ome.tif"
     
     #fission_path_csv = "balance_final.ome-TYX-T1p0_Y0p1_X0p1-ch0-t0_to_100-features_organelles.csv"
     #fusion_path_csv = "hi_fu_thick.ome-TYX-T1p0_Y0p1_X0p1-ch0-t50_to_100-features_organelles.csv"
@@ -791,6 +790,7 @@ if __name__ == "__main__":
                 interested_tree = treeMatrix_all[frame] 
                 mask_tree= np.isin(interested_tree[:,2],labels)
                 current_label_count= interested_tree[mask_tree].shape[0]
+                interested_frame = np.array([frame,frame+1])
 
                 if first_counter: 
                     previous_label_count = current_label_count

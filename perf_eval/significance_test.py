@@ -101,13 +101,13 @@ def apply_function_folder(*args, keywords, func,) :
             all_results[file] = results
     return all_results
 
-def convert_to_sig_test(df, col_value, regularization_ = False, epsilon_ = 0.001):
+def convert_to_sig_test(df, col_value, group_name= "toxin", regularization_ = False, epsilon_ = 0.001):
 
     if regularization_:
         df = apply_function_to_arrays(df, regularization, epsilon_).flatten()
     else:
         df = df.flatten()
-    pan_df = pd.DataFrame({ "toxin": col_value,'event': df}) 
+    pan_df = pd.DataFrame({ group_name : col_value,'event': df}) 
     return df,pan_df
         
         

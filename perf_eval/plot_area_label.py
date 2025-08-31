@@ -27,17 +27,6 @@ def plot_multiple_line(fpr_list, tpr_list, plot_label_list, names, title="Multip
         
         # Plot points
         plt.scatter(fpr, tpr, color=color, s=100, alpha=0.6, label=f'{name} (Points)')
-        
-        # Add labels for points
-        """
-        for j, label in enumerate(labels):
-            plt.annotate(f'{label}',
-                        (fpr[j], tpr[j]),
-                        xytext=(5, 5),
-                        textcoords='offset points',
-                        color=color,
-                        alpha=0.7)
-        """
     
     # Add diagonal line
     #plt.plot([0, 1], [0, 1], 'k--', alpha=0.3, label='Random')

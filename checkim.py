@@ -6,22 +6,7 @@ from scipy.ndimage import center_of_mass, extrema
 import napari 
 import matplotlib.pyplot as plt
 from skimage import measure
-'''
-def get_label_contour(label_data, label_id):
-    label_mask = label_data == label_id
-    contours = measure.find_contours(label_mask, 0.5)
-    return [np.flip(contour, axis=1) for contour in contours]
 
-        def get_label_contour(label_data, label_id):
-            label_mask = label_data == label_id
-            contour = measure.find_contours(label_mask, 0.5)
-            contours = []
-            for i in range(len(contour)):
-                contours.append(np.insert(contour[i], 0, 1, axis=1))
-# all contour
-            return [np.flip(contour, axis=1) for contour in contours]
-
-'''
 def plot_labels(csvPath,segmented_path,reassigned_path,contour_label):
     
     nellie_df_2d = pd.read_csv(csvPath)
