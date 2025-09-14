@@ -7,7 +7,7 @@ import napari
 import matplotlib.pyplot as plt
 from skimage import measure
 
-with open("D:/Internship/NTU/simulation/nonzero_frames_final.log", "r", encoding='utf-8-sig') as f:
+with open("D:/Internship/NTU/simulation/hi_fission/nonzero_frames_final.log", "r", encoding='utf-8-sig') as f:
     event_all = []
     string = f.read()
     lines = string.split("\n")
