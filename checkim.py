@@ -4,7 +4,6 @@ import pandas as pd
 import cv2
 from scipy.ndimage import center_of_mass, extrema
 import napari 
-import matplotlib.pyplot as plt
 from skimage import measure
 
 def plot_labels(csvPath,segmented_path,reassigned_path,contour_label):
@@ -16,6 +15,7 @@ def plot_labels(csvPath,segmented_path,reassigned_path,contour_label):
 
     viewer = napari.Viewer()
     viewer.add_labels(reassigned_im, name ="labeled image")
+   
     
     centroids = []
     labels = []
@@ -43,8 +43,14 @@ def plot_labels(csvPath,segmented_path,reassigned_path,contour_label):
              #       contours = get_label_contour(labeled_im_frame, label)
               #      for contour in contours:
                #         contour_points.append(np.column_stack((np.full(len(contour), frame), contour)))
-
-    viewer.add_points(centroids, text = labels, size =0.5, name = "label number")
+    label_strings = [str(l) for l in labels]
+    text = {
+        'string': label_strings,  # Displays each label (e.g., '1', '2', etc.)
+        'size': 0.1,           # Text size (adjust for visibility; avoid very small values like 2)
+        'color': 'green',     # Text color (string or RGB array)
+        'translation': np.array([-10, 10])  # Optional: Offset text from point (x, y in pixels)
+    }
+    viewer.add_points(np.array(centroids),  text = labels, size = 0.5, name = "label number")
     napari.run()
 
 #check extremas
@@ -87,11 +93,11 @@ def find_extrema(binary_image):
 
 
 
-main_dir = "D:/Internship/NTU/nellie_output/nellie_output/simulation"
+main_dir  = "D:/Internship/NTU/simulation/hi_fission/"
 #test the result from iminstance
-seg_path = main_dir + "/multi_center_resized2.ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_100-im_instance_label.ome.tif" #don
-reassigned_path = main_dir +"/multi_center_resized2.ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_100-im_obj_label_reassigned.ome.tif"
-CSV_file_path = main_dir + "/multi_center_resized2.ome-TYX-T1p0_Y0p15_X0p15-ch0-t0_to_100-features_organelles.csv"
+seg_path = main_dir + "hi_fiss.ome-TYX-T1p0_Y0p25_X0p25-ch0-t0_to_300-im_instance_label.ome.tif" #don
+reassigned_path = main_dir +"hi_fiss.ome-TYX-T1p0_Y0p25_X0p25-ch0-t0_to_300-im_obj_label_reassigned.ome.tif"
+CSV_file_path = main_dir + "hi_fiss.ome-TYX-T1p0_Y0p25_X0p25-ch0-t0_to_300-features_organelles.csv"
 
 # Usage
 labeled_im = tifffile.imread(seg_path)

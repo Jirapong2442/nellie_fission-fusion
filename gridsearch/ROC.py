@@ -31,7 +31,7 @@ def plot_multiple_roc(fpr_list, tpr_list, plot_label_list, names, title="Multipl
         # Add labels for points
         
         for j, label in enumerate(labels):
-            plt.annotate(f'{label}',
+            plt.annotate(f'',
                         (fpr[j], tpr[j]),
                         xytext=(5, 5),
                         textcoords='offset points',
@@ -100,7 +100,7 @@ if __name__ == "__main__":
 
     all_label = []
 
-    all_comb = ['0','5','10','15','17','19','21','23','25','31','50','75','100']
+    all_comb = ['0','5','10','15','17','19','21','23','25','50','75','100']
     #all_comb = ['23']
     
     for comb in all_comb:
