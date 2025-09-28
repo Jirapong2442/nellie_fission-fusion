@@ -1,8 +1,16 @@
-import scipy.ndimage
-import tifffile
+
+'''
+script with function for statistical analysis of fission fusion event from area-baed algorithm output.
+
+1. computes total fission/fusion event from the directory that has Area-based algorithm output (CSV files).
+2. computes fission/fusion ratio from the computed fission/fusion event.
+3. plots fission/fusion event over time/frame for different conditions (e.g., control, FCCP, oligomycin, rotenone).
+4. Nellie's author fission fusion calculation from reassigned label difference between frame. 
+
+'''
+
 import numpy as np
 import pandas as pd
-import scipy.stats
 import os
 from plot_area_label import plot_multiple_line
 import matplotlib.pyplot as plt
@@ -327,16 +335,6 @@ if __name__ == "__main__":
         all_area.append(df_area)
         all_index.append(index)
         all_raw_label.append(df_raw_label)
-        
-        '''
-        try: 
-            all_label = np.vstack((all_label, df_label))
-            all_area = np.vstack((all_area, df_area))
-
-        except ValueError:
-            all_label = df_label
-            all_area = df_area
-        '''
 
 
     index_tox = [len(fusion_tox[x]) for x in range(len(fusion_tox)) ]
@@ -385,19 +383,8 @@ if __name__ == "__main__":
     df_fission_frame = fiss_frame
     df_fusion_event = fusion_tox
     df_fusion_frame = fus_frame
-    '''
-    control =   [fission_mdivi_self[0][1:ending]] + [fusion_mdivi_self[0][1:ending]] #+ [all_stat_control_self[starting-1:ending-1]] #+ [all_raw_label[0][starting:ending]] #
-    control_frame  =  [fiss_self_frame_mdivi[0][1:ending]] + [fus_self_frame_mdivi[0][1:ending]] #+  [fiss_frame[0][starting:ending]] #+ [fiss_frame[0][starting:ending]]#
 
-    FCCP =  [fission_mdivi_self[1][1:ending]] + [fusion_mdivi_self[1][1:ending]] #+[all_stat_FCCP_self[starting-1:ending-1]] #+ [all_raw_label[1][starting:ending]] #
-    FCCP_frame = [fiss_self_frame_mdivi[1][1:ending]] + [fus_self_frame_mdivi[1][1:ending]] #+   [fiss_frame[1][starting:ending]] #+ [fiss_frame[1][starting:ending]]#
-
-    oligo =    [fission_mdivi_self[2][1:ending]] + [fusion_mdivi_self[2][1:ending]]# + [all_stat_oligo_self[starting-1:ending-1]] #+ [all_raw_label[2][starting:ending]]#
-    oligo_frame = [fiss_self_frame_mdivi[2][1:ending]] + [fus_self_frame_mdivi[2][1:ending]] #+ [fiss_frame[2][starting:ending]] #+  [fiss_frame[2][starting:ending]]#
-
-    Rotenone = [fission_mdivi_self[3][1:ending]] + [fusion_mdivi_self[3][1:ending]]# + [all_stat_Rotenone_self[starting-1:ending-1]] #+ [all_raw_label[3][starting:ending]] #
-    Rotenone_frame =  [fiss_self_frame_mdivi[3][1:ending]] + [fus_self_frame_mdivi[3][1:ending]] #+ [fiss_frame[3][starting:ending]]#+ [fiss_frame[3][starting:ending]]#
-    '''
+    
     control =   [df_fission_event[0][1:ending]] + [df_fusion_event[0][1:ending]] #+ [all_stat_control_self[starting-1:ending-1]] #+ [all_raw_label[0][starting:ending]] #
     control_frame  =  [df_fission_frame[0][1:ending]] + [df_fusion_frame[0][1:ending]] #+  [fiss_frame[0][starting:ending]] #+ [fiss_frame[0][starting:ending]]#
 
@@ -421,33 +408,3 @@ if __name__ == "__main__":
 
     # Display the plot
     plt.show()
-
-    '''
-       # list to store files
-    output_fission = []
-    output_fusion = []
-    fission_df = []
-    fusion_df = []
-
-    # Iterate directory
-    # order: control FCCP oligo rotenone
-    for file in os.listdir(dir_path):
-    # check if current path is a file
-        if "output_fission" in file and os.path.isfile(os.path.join(dir_path,file)):
-            output_fission.append(os.path.join(dir_path,file))
-        if "output_fusion" in file and os.path.isfile(os.path.join(dir_path,file)):
-            output_fusion.append(os.path.join(dir_path,file))
-
-    fission_df = get_fiss_fus(output_fission,fission_df)
-    fusion_df = get_fiss_fus(output_fusion,fusion_df)
-
-
-    fiss_fus_ratios = []
-
-    for i in range(len(fusion_df)):
-        for j in range(len(fusion_df[i])):
-            try:
-                fiss_fus_ratios.append(fission_df[i][j] / fusion_df[i][j])
-            except ZeroDivisionError:
-                fiss_fus_ratios.append(0)
-    '''

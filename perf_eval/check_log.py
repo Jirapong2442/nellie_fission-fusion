@@ -1,3 +1,9 @@
+'''
+plot linechart comparision of simulated fission fusion event (log) and predicted fission fusion event (area-baed algorithm output)
+    X axis = frame
+    Y axis = number of event
+'''
+
 import numpy as np
 import numpy as np
 import pandas as pd
@@ -7,7 +13,7 @@ from checkFissFus2 import get_fiss_fus_all
 from plot_area_label import plot_multiple_line
 from significance_test import sliding_window_cumsum
 import matplotlib.pyplot as plt
-from checkim import plot_labels
+from  main_.checkim import plot_labels
 
 # query .log data
 event_all_log = []

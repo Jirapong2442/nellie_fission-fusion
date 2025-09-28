@@ -3,4 +3,5 @@ check_label_area/
 mitometer_output/
 self_event/
 simulated_output/
-
+plot_im_coor.ipynb
+archive/

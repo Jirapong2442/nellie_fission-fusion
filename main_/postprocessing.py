@@ -1,3 +1,19 @@
+'''
+This is a main script to compute a fission and fusion event from Nellie's output using am area-based and component-based approach.
+
+Hyperparameters:
+    1. num_neighbour = number of nearest neighbour to consider
+    2. diff_threshold = threshold of volume difference to consider a fission or fusion event
+    3. combination_threshold = threshold of combination search to consider a fission or fusion event
+Input: 
+    1. Nellie's output csv file containing feature information
+    2. Nellie's Segmented image file
+    3. Nellie's Reassigned label image file
+Output:
+    1. A csv file containing fission and fusion events including a area-pre, area-post, interaction distance, interaction type, frame number, reassigned label, raw label, and coordinates of the event.
+    2. A csv file containing Neighbors of all labels in all frame
+    3. Two CSV files summarized the number of fission and fusion events of each lavel in each frame
+'''
 import numpy as np
 import pandas as pd
 import cv2
@@ -11,6 +27,19 @@ import matplotlib.pyplot as plt
 num_neighbour = 3
 diff_threshold = 1 #0.25 #2
 combination_threshold = 23
+main_dir = "/home/jirapong/jirapong/simulation/hi_fiss/nellie_output/"
+out_path = "/home/jirapong/nellie/my_script/algo_output/simulation/hi_fission/"
+#main_dir = "/home/jirapong/jirapong/input_toxicity/nellie_output/"
+#out_path = "/home/jirapong/nellie/my_script/nellie_output/toxicity/component_based"
+#filename = "pdb"
+filename = "hi_fiss"
+output_name = filename
+
+
+file_path_feature = main_dir  + filename +  ".ome-TYX-T1p0_Y0p25_X0p25-ch0-t0_to_300-features_organelles.csv"
+seg_path = main_dir   + "/nellie_necessities/" + filename+ ".ome-TYX-T1p0_Y0p25_X0p25-ch0-t0_to_300-im_instance_label.ome.tif"
+reassigned_path = main_dir + "/nellie_necessities/"  + filename+ ".ome-TYX-T1p0_Y0p25_X0p25-ch0-t0_to_300-im_obj_label_reassigned.ome.tif"
+
 
 def check_Fis_Fus_Mitometer (file_path,timeDim):
     #check fission fusion from mitometer output
@@ -694,23 +723,10 @@ def append_event(event,diff,labels,frame,isFusion,event_arr):
         event_arr = np.concatenate((event_arr,fis_fus),axis =0) 
     return event_arr
 
-# 4 *21 = 84 = 1.5 hrs
+
 
 if __name__ == "__main__":
 
-    main_dir = "/home/jirapong/jirapong/simulation/hi_fiss/nellie_output/"
-    out_path = "/home/jirapong/nellie/my_script/algo_output/simulation/hi_fission/"
-    #main_dir = "/home/jirapong/jirapong/input_toxicity/nellie_output/"
-    #out_path = "/home/jirapong/nellie/my_script/nellie_output/toxicity/component_based"
-    #filename = "pdb"
-    filename = "hi_fiss"
-    output_name = filename
-
-    
-    file_path_feature = main_dir  + filename +  ".ome-TYX-T1p0_Y0p25_X0p25-ch0-t0_to_300-features_organelles.csv"
-    seg_path = main_dir   + "/nellie_necessities/" + filename+ ".ome-TYX-T1p0_Y0p25_X0p25-ch0-t0_to_300-im_instance_label.ome.tif"
-    reassigned_path = main_dir + "/nellie_necessities/"  + filename+ ".ome-TYX-T1p0_Y0p25_X0p25-ch0-t0_to_300-im_obj_label_reassigned.ome.tif"
-    
     nellie_df = pd.read_csv(file_path_feature)
     labeled_im = tifffile.imread(seg_path)
     #reassigned_im = tifffile.imread(reassigned_path)

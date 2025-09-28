@@ -1,3 +1,7 @@
+'''
+This script visualizes labeled images and their corresponding centroids using Napari.
+It reads a CSV file containing feature information, a segmented image file, and a reassigned label image file which found in Nellie's output.
+'''
 import tifffile
 import numpy as np
 import pandas as pd
@@ -6,7 +10,7 @@ from scipy.ndimage import center_of_mass, extrema
 import napari 
 from skimage import measure
 
-def plot_labels(csvPath,segmented_path,reassigned_path,contour_label):
+def plot_labels(csvPath,segmented_path,reassigned_path):
     
     nellie_df_2d = pd.read_csv(csvPath)
     labeled_im = tifffile.imread(segmented_path)
@@ -52,8 +56,6 @@ def plot_labels(csvPath,segmented_path,reassigned_path,contour_label):
     }
     viewer.add_points(np.array(centroids),  text = labels, size = 0.5, name = "label number")
     napari.run()
-
-#check extremas
 def find_extrema(binary_image):
     # Ensure the image is binary
     if binary_image.dtype != np.uint8:
@@ -108,51 +110,4 @@ binary_image = labeled_im_frame == 602 # your binary image
 # 1. feature component csv file
 # 2. instance label ome tif 
 # 3. obk lable reassigned ome tif file
-plot_labels(CSV_file_path,seg_path,reassigned_path,321)
-
-extremas = find_extrema(binary_image)
-centriod = center_of_mass(binary_image)
-
-'''
-# Plot the binary image and contours
-plt.figure(figsize=(10, 5))
-
-plt.subplot(1, 2, 1)
-plt.title('Binary Image')
-plt.imshow(binary_image, cmap='gray')
-plt.scatter(extremas[:, 1], extremas[:, 0], color='red', s=100, edgecolor='black')
-plt.scatter(centriod[1], centriod[0], color='blue', s=100, edgecolor='black')
-plt.axis('off')
-plt.show()
-
-print()
-
-viewer = napari.Viewer()
-for frame in range(30):
-    labeled_im_frame = labeled_im[frame]
-
-    unique_label = np.unique(labeled_im_frame)
-    unique_label = unique_label[unique_label != 0]
-    num_features = len(unique_label) 
-
-    print(f"feature in {frame:02} frame is {num_features}")
-
-    centroids = []
-    labels = []
-    # !!!!!cannot find a label since it always start over if we use range(len(unique_label))
-    for label in unique_label:
-        all_extrema = extrema(labeled_im_frame == label)
-        centroid = all_extrema[3]
-        centroid = np.array(list(centroid))
-        centroids.append(np.append(frame, centroid))
-        
-        nellie_df_2d_label = nellie_df_2d[nellie_df_2d['label'] == label]
-        reassigned_label = nellie_df_2d_label['reassigned_label_raw']
-        
-        labels.append(int(list(reassigned_label)[0]))
-    #add number of assigned label
-    viewer.add_points(centroids, text = labels, size =2, name = "label number")
-
-viewer.add_labels(reassigned_im, name ="labeled image")
-napari.run()
-'''
+plot_labels(CSV_file_path,seg_path,reassigned_path)

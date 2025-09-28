@@ -1,3 +1,6 @@
+'''
+for each condition, check number of label and area over time/frame
+'''
 import numpy as np
 import matplotlib.pyplot as plt
 import os

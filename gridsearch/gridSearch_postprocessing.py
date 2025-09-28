@@ -1,3 +1,7 @@
+'''
+run gridsearch on K (nearest Neighbour), L (difference threshold), M (combination threshold)
+'''
+
 import numpy as np
 import pandas as pd
 import cv2

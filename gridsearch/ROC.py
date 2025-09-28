@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import os
 import re
-def plot_multiple_roc(fpr_list, tpr_list, plot_label_list, names, title="Multiple ROC Curves"):
+def plot_multiple_roc(fpr_list, tpr_list, plot_label_list, names, title="Multiple ROC Curves (K = 4)"):
     """
     Plot multiple ROC curves on the same plot with different colors
     
@@ -47,9 +47,9 @@ def plot_multiple_roc(fpr_list, tpr_list, plot_label_list, names, title="Multipl
     
     # Add grid, labels, and title
     plt.grid(True, alpha=0.3)
-    plt.xlabel('False Positive Rate (FPR)')
-    plt.ylabel('True Positive Rate (TPR)')
-    plt.title(title)
+    plt.xlabel('False Positive Rate (FPR)', fontsize=18)
+    plt.ylabel('True Positive Rate (TPR)', fontsize=18)
+    plt.title(title, fontsize = 18)
     
     # Adjust legend to remove duplicate point entries
     handles, labels = plt.gca().get_legend_handles_labels()
@@ -64,8 +64,7 @@ def plot_multiple_roc(fpr_list, tpr_list, plot_label_list, names, title="Multipl
             unique_labels.append(name)
             unique_handles.append(handle)
     
-    plt.legend(unique_handles, unique_labels, loc='lower right')
-    
+    plt.legend(unique_handles, unique_labels, loc='lower right', title="M in percentage")
     # Display the plot
     plt.show()
 
@@ -214,5 +213,5 @@ if __name__ == "__main__":
         possible_event_all = pd.DataFrame(all_arr, columns=column_names_event)
         possible_event_all.to_csv(os.path.join(outpath,f'{comb}_metrics.csv'), index=False) 
 
-    plot_multiple_roc(all_fpr, all_tpr, all_label, all_comb, "Comparison of ROC Curves")
+    plot_multiple_roc(all_fpr, all_tpr, all_label, all_comb, "Comparison of ROC Curves (K=4)")
     
