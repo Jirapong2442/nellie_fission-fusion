@@ -23,4 +23,4 @@ Please check environment.yml
 5.2 *neighbor.csv* neighbour of all labels for debugging
 5.3 *output_fission.csv* and *output_fusion.csv*, a row represents all frames, and a column represents all labels. 0 means no fission/fusion of that label in that particular frame. 
 
-![alt text](usage/algorithm,_flowchart.png) Figure 1: Temperature mappin with FFE_No drift Correction
+![alt text](usage/algorithm,_flowchart.png) Figure 1: Usage
